@@ -49,13 +49,18 @@
                         <div class="rsvp-contact">{{ invitationData.rsvpContact }}</div>
                     </div>
 
-                    <div class="action-buttons">
+                    <div class="action-buttons no-print">
                         <button class="btn btn-primary" @click="downloadInvite">
                             📄 Download Invite
                         </button>
                         <button class="btn btn-secondary" @click="addToCalendar">
                             📅 Add to Calendar
                         </button>
+                    </div>
+
+                    <div class="qr-container" style="display: none; text-align: center; margin-top: 20px;">
+                        <canvas id="qr-code"></canvas>
+                        <p style="font-size: 12px;">Scan to verify invite</p>
                     </div>
                 </div>
             </div>
@@ -101,7 +106,7 @@
 <script>
 import people from '../assets/people';
 import html2pdf from 'html2pdf.js';
-
+import QRious from 'qrious';
 
 export default {
     name: 'InviteView',
@@ -159,38 +164,47 @@ export default {
                 this.createSparkle(e.clientX, e.clientY);
             }
         },
+
         downloadInvite() {
-  const element = this.$refs.invitationToDownload;
+            const element = this.$refs.invitationToDownload;
 
-  const opt = {
-    margin: 0, // minimal margin
-    filename: `invitation-${this.invitationData.invitedGuest || 'guest'}.pdf`,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: {
-        scale: 5,
-      useCORS: true
-    },
-    jsPDF: {
-      unit: 'in',
-      format: 'letter',
-      orientation: 'portrait'
-    },
-    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] } // prevent page breaks
-  };
+            // 1. Generate QR code pointing to Google
+            const qrCanvas = element.querySelector('#qr-code');
+            const qr = new QRious({
+                element: qrCanvas,
+                value: `https://belovedunion.eventlord.org/verify/${this.person.id}`,
+                size: 120
+            });
 
-  html2pdf()
-    .set(opt)
-    .from(element)
-    .toPdf()
-    .get('pdf')
-    .then(pdf => {
-      const totalPages = pdf.internal.getNumberOfPages();
-      if (totalPages > 1) {
-        console.warn('Content is overflowing. Consider shrinking the container height.');
-      }
-    })
-    .save();
-},
+            // 2. Show QR code container and hide .no-print items
+            const qrContainer = element.querySelector('.qr-container');
+            const noPrintElems = element.querySelectorAll('.no-print');
+
+            if (qrContainer) qrContainer.style.display = 'block';
+            noPrintElems.forEach(el => el.style.display = 'none');
+
+            // 3. Delay to ensure QR renders before capturing
+            setTimeout(() => {
+                const opt = {
+                    margin: 0,
+                    filename: `invitation-${this.invitationData.invitedGuest || 'guest'}.pdf`,
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 3, useCORS: true },
+                    jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' },
+                    pagebreak: { mode: ['avoid-all'] }
+                };
+
+                html2pdf()
+                    .set(opt)
+                    .from(element)
+                    .save()
+                    .then(() => {
+                        // 4. Restore visibility
+                        noPrintElems.forEach(el => el.style.display = '');
+                        if (qrContainer) qrContainer.style.display = 'none';
+                    });
+            }, 300); // Wait briefly to ensure QR is visible before capture
+        },
 
         addToCalendar() {
             const data = this.invitationData;
@@ -273,9 +287,10 @@ export default {
 }
 
 .invitation-container * {
-  color: #000 !important; /* or a dark solid color */
-  text-shadow: none !important;
-  opacity: 1 !important;
+    color: #000 !important;
+    /* or a dark solid color */
+    text-shadow: none !important;
+    opacity: 1 !important;
 }
 
 .header-decoration {
