@@ -31,6 +31,11 @@
                             <i class="fas fa-images"></i> Gallery
                         </a>
                     </li>
+                    <li class="nav-item" data-aos="fade-left" data-aos-delay="400">
+                        <a class="nav-link" href="#invite">
+                            <i class="fa fa-calendar"></i> Invitation
+                        </a>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -249,10 +254,10 @@
         <h2 class="section-title text-center" data-aos="fade-up">Get Invite</h2>
         <p class="text-center">Click on the button below to get your own personalized invite</p>
         <div class="text-center mt-4">
-                                <button type="submit" class="btn btn-luxury" @click="validateAndRedirect()">
-                                    <i class="fas fa-paper-plane me-2"></i>Get Invite
-                                </button>
-                            </div>
+            <button type="submit" class="btn btn-luxury" @click="validateAndRedirect()">
+                <i class="fas fa-paper-plane me-2"></i>Get Invite
+            </button>
+        </div>
     </section>
 
     <!-- Contact Section -->
@@ -466,43 +471,43 @@ export default {
             this.selectedPhoto = photo;
         },
         async validateAndRedirect() {
-      const { value: formValues } = await Swal.fire({
-        title: 'Enter your details',
-        html:
-          '<input id="swal-name" class="swal2-input" placeholder="Enter your name">' +
-          '<input id="swal-phone" class="swal2-input" placeholder="Enter your phone number">',
-        focusConfirm: false,
-        preConfirm: () => {
-          const name = document.getElementById('swal-name').value
-          const phone = document.getElementById('swal-phone').value
-          if (!name || !phone) {
-            Swal.showValidationMessage('Both fields are required')
-            return false
-          }
-          return { name, phone }
+            const { value: formValues } = await Swal.fire({
+                title: 'Enter your details',
+                html:
+                    '<input id="swal-name" class="swal2-input" placeholder="Enter your name">' +
+                    '<input id="swal-phone" class="swal2-input" placeholder="Enter your phone number">',
+                focusConfirm: false,
+                preConfirm: () => {
+                    const name = document.getElementById('swal-name').value
+                    const phone = document.getElementById('swal-phone').value
+                    if (!name || !phone) {
+                        Swal.showValidationMessage('Both fields are required')
+                        return false
+                    }
+                    return { name, phone }
+                }
+            })
+
+            if (!formValues) return // user cancelled
+
+            const match = people.find(
+                person =>
+                    person.name.toLowerCase().trim() === formValues.name.toLowerCase().trim()
+            )
+
+            if (!match) {
+                Swal.fire('Not Found', 'Name not found in the list.', 'error')
+                return
+            }
+
+            if (match.phone !== formValues.phone.trim()) {
+                Swal.fire('Mismatch', 'Phone number does not match.', 'error')
+                return
+            }
+
+            // Redirect
+            this.$router.push(`/invite/${match.id}`)
         }
-      })
-
-      if (!formValues) return // user cancelled
-
-      const match = people.find(
-        person =>
-          person.name.toLowerCase().trim() === formValues.name.toLowerCase().trim()
-      )
-
-      if (!match) {
-        Swal.fire('Not Found', 'Name not found in the list.', 'error')
-        return
-      }
-
-      if (match.phone !== formValues.phone.trim()) {
-        Swal.fire('Mismatch', 'Phone number does not match.', 'error')
-        return
-      }
-
-      // Redirect
-      this.$router.push(`/invite/${match.id}`)
-    }
     }
 }
 </script>
