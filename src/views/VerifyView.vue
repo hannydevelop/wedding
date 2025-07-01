@@ -5,6 +5,7 @@
             <div class="status-icon accepted">✓</div>
             <h2 class="status-title accepted">Genuine Invitation</h2>
             <p class="status-message accepted">The guest {{ person.name }} has a genuine invitation</p>
+            <h6>Guests: {{ person.guest }}</h6>
             <span class="status-badge accepted">Please, grant access</span>
         </div>
     </div>
@@ -21,7 +22,7 @@
 </template>
 
 <script>
-import people from '../assets/people';
+import supabase from '../supabase'
 
 export default {
     name: 'VerifyView',
@@ -30,9 +31,18 @@ export default {
             person: null,
         };
     },
-    created() {
+    async created() {
+      const { data, error } = await supabase
+        .from('people')
+        .select('*');
+
+      if (error) {
+        console.error('Error fetching crew:', error.message);
+        return [];
+      }
+
         const id = this.$route.params.id;
-        this.person = people.find(p => p.id === id);
+        this.person = data.find(p => p.id === id);
     }
 }
 </script>

@@ -47,6 +47,7 @@
                     <div class="rsvp-section">
                         <div class="rsvp-title">{{ invitationData.rsvpTitle }}</div>
                         <div class="rsvp-contact">{{ invitationData.rsvpContact }}</div>
+                        <div class="rsvp-title">Guests: +{{ this.person.guest }}</div>
                     </div>
 
                     <div class="action-buttons no-print">
@@ -55,6 +56,9 @@
                         </button>
                         <button class="btn btn-secondary" @click="addToCalendar">
                             📅 Add to Calendar
+                        </button>
+                        <button class="btn btn-secondary" @click="goRsvp">
+                            🗓️ RSVP
                         </button>
                     </div>
 
@@ -104,7 +108,7 @@
 </template>
 
 <script>
-import people from '../assets/people';
+import supabase from '../supabase'
 import html2pdf from 'html2pdf.js';
 import QRious from 'qrious';
 
@@ -163,6 +167,10 @@ export default {
             if (Math.random() > 0.95) {
                 this.createSparkle(e.clientX, e.clientY);
             }
+        },
+
+        goRsvp() {
+            this.$router.push({ path: `/rsvp/${this.person.id}` });
         },
 
         downloadInvite() {
@@ -262,9 +270,18 @@ export default {
     unmounted() {
         document.removeEventListener('mousemove', this.handleMouseMove);
     },
-    created() {
+    async created() {
+      const { data, error } = await supabase
+        .from('people')
+        .select('*');
+
+      if (error) {
+        console.error('Error fetching crew:', error.message);
+        return [];
+      }
+
         const id = this.$route.params.id;
-        this.person = people.find(p => p.id === id);
+        this.person = data.find(p => p.id === id);
     }
 }
 </script>
