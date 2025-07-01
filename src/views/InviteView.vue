@@ -46,7 +46,6 @@
 
                     <div class="rsvp-section">
                         <div class="rsvp-title">{{ invitationData.rsvpTitle }}</div>
-                        <div class="rsvp-contact">{{ invitationData.rsvpContact }}</div>
                         <div class="rsvp-title">Guests: +{{ this.person.guest }}</div>
                     </div>
 
