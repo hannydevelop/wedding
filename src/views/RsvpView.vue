@@ -1,7 +1,14 @@
 <template>
     <div id="app-rsvp">
-        <div class="invitation-card">
-            <h1 class="couple-names"> {{ this.person.name }} </h1>
+        <div v-if="isLoading" class="loading-overlay">
+            <div class="loading-content">
+                <div class="loading-ring"></div>
+                <h3>Loading Wedding RSVP...</h3>
+                <p>Preparing something beautiful ✨</p>
+            </div>
+        </div>
+        <div v-else class="invitation-card">
+            <h1 class="couple-names"> {{ person.name }} </h1>
 
             <div class="decorative-line"></div>
 
@@ -31,6 +38,7 @@ export default {
     name: 'RsvpView',
     data() {
         return {
+            isLoading: true,
             person: null,
             guestCount: '1'
         };
@@ -48,6 +56,13 @@ export default {
         const id = this.$route.params.id;
         this.person = data.find(p => p.id === id);
         this.guestCount = this.person.guest;
+    },
+    mounted() {
+        // Simulate loading
+        setTimeout(() => {
+            this.isLoading = false;
+        }, 2000);
+
     },
     methods: {
         async submitRSVP() {
