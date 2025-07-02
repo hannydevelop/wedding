@@ -209,249 +209,374 @@ export default {
         },
 
         // Method 1: Platform Detection with Different Approaches
-        addToCalendar() {
-            const data = this.invitationData;
-            const eventDetails = {
-                title: `Ugo & ${data.groom} White Wedding`,
-                start: '20250714T140000Z',
-                end: '20250714T180000Z',
-                location: `${data.venueName}, ${data.address}`,
-                description: `Traditional Wedding Ceremony for ${data.bride} & ${data.groom}. ${data.rsvpTitle} (${data.rsvpContact})`,
-                uid: `${Date.now()}@peppubuild.com`
-            };
+addToCalendar() {
+    const data = this.invitationData;
+    const eventDetails = {
+        title: `Ugo & ${data.groom} White Wedding`,
+        start: '20250714T140000Z',
+        end: '20250714T180000Z', 
+        location: `${data.venueName}, ${data.address}`,
+        description: `Traditional Wedding Ceremony for ${data.bride} & ${data.groom}. ${data.rsvpTitle} (${data.rsvpContact})`,
+        uid: `${Date.now()}@peppubuild.com`
+    };
 
-            // Detect platform
-            const isAndroid = /Android/i.test(navigator.userAgent);
-            const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    // Detect platform
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-            if (isAndroid) {
-                this.addToCalendarAndroid(eventDetails);
-            } else if (isIOS) {
-                this.addToCalendarIOS(eventDetails);
+    if (isAndroid) {
+        this.addToCalendarAndroid(eventDetails);
+    } else if (isIOS) {
+        this.addToCalendarIOS(eventDetails);
+    } else {
+        // Desktop/other - use ICS download
+        this.downloadICSFile(eventDetails);
+    }
+},
+
+// Method for Android - Try Outlook first, then Google Calendar
+addToCalendarAndroid(eventDetails) {
+    // First try Outlook (many Android users have it installed)
+    this.tryOutlookCalendar(eventDetails)
+        .then(success => {
+            if (success) {
+                Swal.fire({
+                    title: 'Calendar Opened',
+                    text: 'Event has been sent to Outlook Calendar.',
+                    icon: 'success'
+                });
             } else {
-                // Desktop/other - use ICS download
-                this.downloadICSFile(eventDetails);
+                // If Outlook fails, try Google Calendar
+                return this.tryGoogleCalendar(eventDetails);
             }
-        },
+        })
+        .then(success => {
+            if (success === false) {
+                // Both Outlook and Google Calendar failed, download ICS
+                console.log('Calendar apps not available, falling back to ICS download');
+                this.downloadICSFile(eventDetails);
+                Swal.fire({
+                    title: 'Download Complete',
+                    text: 'Tap the downloaded file to add the event to your calendar.',
+                    icon: 'success'
+                });
+            } else if (success === true) {
+                Swal.fire({
+                    title: 'Calendar Opened',
+                    text: 'Event has been sent to Google Calendar.',
+                    icon: 'success'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Calendar integration error:', error);
+            // Final fallback to ICS download
+            this.downloadICSFile(eventDetails);
+            Swal.fire({
+                title: 'Download Complete',
+                text: 'Tap the downloaded file to add the event to your calendar.',
+                icon: 'success'
+            });
+        });
+},
 
-        // Method for Android - Try multiple approaches
-        addToCalendarAndroid(eventDetails) {
-            // Try Google Calendar URL first (works if Google Calendar is installed)
+// Try to open Outlook Calendar
+tryOutlookCalendar(eventDetails) {
+    return new Promise((resolve) => {
+        try {
+            // Create Outlook calendar URL
+            const outlookUrl = this.createOutlookCalendarUrl(eventDetails);
+            
+            // Try to open Outlook
+            const outlookLink = document.createElement('a');
+            outlookLink.href = outlookUrl;
+            outlookLink.target = '_blank';
+            outlookLink.rel = 'noopener';
+            
+            let appOpened = false;
+            
+            const onFocus = () => {
+                appOpened = true;
+                window.removeEventListener('focus', onFocus);
+                resolve(true);
+            };
+            
+            const onBlur = () => {
+                // Small delay to see if focus event fires
+                setTimeout(() => {
+                    if (!appOpened) {
+                        window.removeEventListener('focus', onFocus);
+                        window.removeEventListener('blur', onBlur);
+                        resolve(false);
+                    }
+                }, 1000);
+            };
+            
+            window.addEventListener('focus', onFocus);
+            window.addEventListener('blur', onBlur);
+            
+            // Try to open Outlook
+            outlookLink.click();
+            
+            // Timeout after 3 seconds if no response
+            setTimeout(() => {
+                if (!appOpened) {
+                    window.removeEventListener('focus', onFocus);
+                    window.removeEventListener('blur', onBlur);
+                    resolve(false);
+                }
+            }, 3000);
+            
+        } catch (error) {
+            console.log('Outlook not available:', error);
+            resolve(false);
+        }
+    });
+},
+
+// Try to open Google Calendar
+tryGoogleCalendar(eventDetails) {
+    return new Promise((resolve) => {
+        try {
             const googleCalendarUrl = this.createGoogleCalendarUrl(eventDetails);
-
-            // Try opening Google Calendar directly
+            
             const googleLink = document.createElement('a');
             googleLink.href = googleCalendarUrl;
             googleLink.target = '_blank';
             googleLink.rel = 'noopener';
-
-            // Listen for focus event to detect if the app opened
+            
             let appOpened = false;
-
+            
             const onFocus = () => {
                 appOpened = true;
                 window.removeEventListener('focus', onFocus);
+                resolve(true);
             };
-
+            
             window.addEventListener('focus', onFocus);
-
+            
             // Click the Google Calendar link
             googleLink.click();
-
-            // Fallback to ICS download if Google Calendar doesn't open
+            
+            // Timeout after 3 seconds
             setTimeout(() => {
                 if (!appOpened) {
-                    console.log('Google Calendar not available, falling back to ICS');
-                    this.downloadICSFile(eventDetails);
-                    Swal.fire({
-                        title: 'Download Complete',
-                        text: 'Tap the downloaded file to add the event to your calendar.',
-                        icon: 'success'
-                    });
-                } else {
-                    Swal.fire({
-                        title: 'Calendar Opened',
-                        text: 'Event details have been sent to your calendar app.',
-                        icon: 'success'
-                    });
+                    window.removeEventListener('focus', onFocus);
+                    resolve(false);
                 }
-                window.removeEventListener('focus', onFocus);
             }, 3000);
-        },
-
-        // Method for iOS - Use ICS with better MIME type
-        addToCalendarIOS(eventDetails) {
-            const icsContent = this.createICSContent(eventDetails);
-
-            // For iOS, try data URL first
-            const dataUrl = `data:text/calendar;charset=utf8,${encodeURIComponent(icsContent)}`;
-
-            try {
-                window.location.href = dataUrl;
-
-                setTimeout(() => {
-                    Swal.fire({
-                        title: 'Calendar Event',
-                        text: 'Event has been sent to your calendar app.',
-                        icon: 'success'
-                    });
-                }, 1000);
-            } catch (error) {
-                // Fallback to download
-                this.downloadICSFile(eventDetails);
-            }
-        },
-
-        // Create Google Calendar URL
-        createGoogleCalendarUrl(eventDetails) {
-            const startDate = this.formatDateForGoogle(eventDetails.start);
-            const endDate = this.formatDateForGoogle(eventDetails.end);
-
-            const params = new URLSearchParams({
-                action: 'TEMPLATE',
-                text: eventDetails.title,
-                dates: `${startDate}/${endDate}`,
-                details: eventDetails.description,
-                location: eventDetails.location,
-                trp: 'false'
-            });
-
-            return `https://calendar.google.com/calendar/render?${params.toString()}`;
-        },
-
-        // Format date for Google Calendar (YYYYMMDDTHHMMSSZ)
-        formatDateForGoogle(utcDate) {
-            return utcDate.replace(/[-:]/g, '');
-        },
-
-        // Create ICS content
-        createICSContent(eventDetails) {
-            return [
-                'BEGIN:VCALENDAR',
-                'VERSION:2.0',
-                'CALSCALE:GREGORIAN',
-                'PRODID:-//Peppubuild//EN',
-                'METHOD:PUBLISH',
-                'BEGIN:VEVENT',
-                `UID:${eventDetails.uid}`,
-                `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z`,
-                `DTSTART:${eventDetails.start}`,
-                `DTEND:${eventDetails.end}`,
-                `SUMMARY:${eventDetails.title}`,
-                `DESCRIPTION:${eventDetails.description}`,
-                `LOCATION:${eventDetails.location}`,
-                'STATUS:CONFIRMED',
-                'SEQUENCE:0',
-                'TRANSP:OPAQUE',
-                'END:VEVENT',
-                'END:VCALENDAR'
-            ].join('\r\n');
-        },
-
-        // Download ICS file (fallback method)
-        downloadICSFile(eventDetails) {
-            const icsContent = this.createICSContent(eventDetails);
-            const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `${eventDetails.title.replace(/\s+/g, '_')}.ics`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-        },
-
-        // Alternative Method 2: Intent-based approach for Android
-        addToCalendarWithIntent(eventDetails) {
-            const isAndroid = /Android/i.test(navigator.userAgent);
-
-            if (isAndroid) {
-                // Try Android calendar intent
-                const startTime = new Date(eventDetails.start.replace('Z', '')).getTime();
-                const endTime = new Date(eventDetails.end.replace('Z', '')).getTime();
-
-                const intentUrl = `intent://calendar/event?` +
-                    `title=${encodeURIComponent(eventDetails.title)}&` +
-                    `beginTime=${startTime}&` +
-                    `endTime=${endTime}&` +
-                    `description=${encodeURIComponent(eventDetails.description)}&` +
-                    `eventLocation=${encodeURIComponent(eventDetails.location)}` +
-                    `#Intent;scheme=content;package=com.android.calendar;end`;
-
-                try {
-                    window.location.href = intentUrl;
-
-                    setTimeout(() => {
-                        Swal.fire({
-                            title: 'Calendar Opened',
-                            text: 'Event details have been sent to your calendar app.',
-                            icon: 'success'
-                        });
-                    }, 1000);
-                } catch (error) {
-                    // Fallback to Google Calendar URL
-                    this.addToCalendarAndroid(eventDetails);
-                }
-            } else {
-                this.downloadICSFile(eventDetails);
-            }
-        },
-
-        // Method 3: Progressive Enhancement with User Choice
-        addToCalendarWithOptions() {
-            const data = this.invitationData;
-            const eventDetails = {
-                title: `Ugo & ${data.groom} White Wedding`,
-                start: '20250714T140000Z',
-                end: '20250714T180000Z',
-                location: `${data.venueName}, ${data.address}`,
-                description: `Traditional Wedding Ceremony for ${data.bride} & ${data.groom}. ${data.rsvpTitle} (${data.rsvpContact})`,
-                uid: `${Date.now()}@peppubuild.com`
-            };
-
-            const isAndroid = /Android/i.test(navigator.userAgent);
-
-            if (isAndroid) {
-                // Show options for Android users
-                Swal.fire({
-                    title: 'Add to Calendar',
-                    text: 'Choose your preferred calendar app:',
-                    showDenyButton: true,
-                    showCancelButton: true,
-                    confirmButtonText: 'Google Calendar',
-                    denyButtonText: 'Download File',
-                    cancelButtonText: 'Cancel',
-                    confirmButtonColor: '#4285f4',
-                    denyButtonColor: '#34a853'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        // Open Google Calendar
-                        const googleUrl = this.createGoogleCalendarUrl(eventDetails);
-                        window.open(googleUrl, '_blank');
-                    } else if (result.isDenied) {
-                        // Download ICS file
-                        this.downloadICSFile(eventDetails);
-                        Swal.fire({
-                            title: 'Download Complete',
-                            text: 'Tap the downloaded file to add to your calendar.',
-                            icon: 'success'
-                        });
-                    }
-                });
-            } else {
-                // iOS and other platforms
-                this.downloadICSFile(eventDetails);
-                setTimeout(() => {
-                    Swal.fire({
-                        title: 'Calendar Event',
-                        text: 'Event file downloaded. It should open your calendar app automatically.',
-                        icon: 'success'
-                    });
-                }, 500);
-            }
+            
+        } catch (error) {
+            console.log('Google Calendar not available:', error);
+            resolve(false);
         }
+    });
+},
+
+// Method for iOS - Use ICS with better MIME type
+addToCalendarIOS(eventDetails) {
+    const icsContent = this.createICSContent(eventDetails);
+    
+    // For iOS, try data URL first
+    const dataUrl = `data:text/calendar;charset=utf8,${encodeURIComponent(icsContent)}`;
+    
+    try {
+        window.location.href = dataUrl;
+        
+        setTimeout(() => {
+            Swal.fire({
+                title: 'Calendar Event',
+                text: 'Event has been sent to your calendar app.',
+                icon: 'success'
+            });
+        }, 1000);
+    } catch (error) {
+        // Fallback to download
+        this.downloadICSFile(eventDetails);
+    }
+},
+
+// Create Outlook Calendar URL
+createOutlookCalendarUrl(eventDetails) {
+    const startDate = this.formatDateForOutlook(eventDetails.start);
+    const endDate = this.formatDateForOutlook(eventDetails.end);
+    
+    const params = new URLSearchParams({
+        path: '/calendar/action/compose',
+        rru: 'addevent',
+        subject: eventDetails.title,
+        startdt: startDate,
+        enddt: endDate,
+        body: eventDetails.description,
+        location: eventDetails.location
+    });
+    
+    return `https://outlook.live.com/calendar/0/deeplink/compose?${params.toString()}`;
+},
+
+// Create Google Calendar URL
+createGoogleCalendarUrl(eventDetails) {
+    const startDate = this.formatDateForGoogle(eventDetails.start);
+    const endDate = this.formatDateForGoogle(eventDetails.end);
+    
+    const params = new URLSearchParams({
+        action: 'TEMPLATE',
+        text: eventDetails.title,
+        dates: `${startDate}/${endDate}`,
+        details: eventDetails.description,
+        location: eventDetails.location,
+        trp: 'false'
+    });
+    
+    return `https://calendar.google.com/calendar/render?${params.toString()}`;
+},
+
+// Format date for Outlook (YYYY-MM-DDTHH:MM:SS.000Z)
+formatDateForOutlook(utcDate) {
+    // Convert from 20250714T140000Z to 2025-07-14T14:00:00.000Z
+    const year = utcDate.substring(0, 4);
+    const month = utcDate.substring(4, 6);
+    const day = utcDate.substring(6, 8);
+    const hour = utcDate.substring(9, 11);
+    const minute = utcDate.substring(11, 13);
+    const second = utcDate.substring(13, 15);
+    
+    return `${year}-${month}-${day}T${hour}:${minute}:${second}.000Z`;
+},
+
+// Format date for Google Calendar (YYYYMMDDTHHMMSSZ)
+formatDateForGoogle(utcDate) {
+    return utcDate.replace(/[-:]/g, '');
+},
+
+// Create ICS content
+createICSContent(eventDetails) {
+    return [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'CALSCALE:GREGORIAN',
+        'PRODID:-//Peppubuild//EN',
+        'METHOD:PUBLISH',
+        'BEGIN:VEVENT',
+        `UID:${eventDetails.uid}`,
+        `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z`,
+        `DTSTART:${eventDetails.start}`,
+        `DTEND:${eventDetails.end}`,
+        `SUMMARY:${eventDetails.title}`,
+        `DESCRIPTION:${eventDetails.description}`,
+        `LOCATION:${eventDetails.location}`,
+        'STATUS:CONFIRMED',
+        'SEQUENCE:0',
+        'TRANSP:OPAQUE',
+        'END:VEVENT',
+        'END:VCALENDAR'
+    ].join('\r\n');
+},
+
+// Download ICS file (fallback method)
+downloadICSFile(eventDetails) {
+    const icsContent = this.createICSContent(eventDetails);
+    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${eventDetails.title.replace(/\s+/g, '_')}.ics`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+},
+
+// Alternative Method 2: Intent-based approach for Android
+addToCalendarWithIntent(eventDetails) {
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    
+    if (isAndroid) {
+        // Try Android calendar intent
+        const startTime = new Date(eventDetails.start.replace('Z', '')).getTime();
+        const endTime = new Date(eventDetails.end.replace('Z', '')).getTime();
+        
+        const intentUrl = `intent://calendar/event?` + 
+            `title=${encodeURIComponent(eventDetails.title)}&` +
+            `beginTime=${startTime}&` +
+            `endTime=${endTime}&` +
+            `description=${encodeURIComponent(eventDetails.description)}&` +
+            `eventLocation=${encodeURIComponent(eventDetails.location)}` +
+            `#Intent;scheme=content;package=com.android.calendar;end`;
+            
+        try {
+            window.location.href = intentUrl;
+            
+            setTimeout(() => {
+                Swal.fire({
+                    title: 'Calendar Opened',
+                    text: 'Event details have been sent to your calendar app.',
+                    icon: 'success'
+                });
+            }, 1000);
+        } catch (error) {
+            // Fallback to Google Calendar URL
+            this.addToCalendarAndroid(eventDetails);
+        }
+    } else {
+        this.downloadICSFile(eventDetails);
+    }
+},
+
+// Method 3: Progressive Enhancement with User Choice
+addToCalendarWithOptions() {
+    const data = this.invitationData;
+    const eventDetails = {
+        title: `Ugo & ${data.groom} White Wedding`,
+        start: '20250714T140000Z',
+        end: '20250714T180000Z',
+        location: `${data.venueName}, ${data.address}`,
+        description: `Traditional Wedding Ceremony for ${data.bride} & ${data.groom}. ${data.rsvpTitle} (${data.rsvpContact})`,
+        uid: `${Date.now()}@peppubuild.com`
+    };
+
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    
+    if (isAndroid) {
+        // Show options for Android users
+        Swal.fire({
+            title: 'Add to Calendar',
+            text: 'Choose your preferred calendar app:',
+            showDenyButton: true,
+            showCancelButton: true,
+            confirmButtonText: 'Google Calendar',
+            denyButtonText: 'Download File',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#4285f4',
+            denyButtonColor: '#34a853'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Open Google Calendar
+                const googleUrl = this.createGoogleCalendarUrl(eventDetails);
+                window.open(googleUrl, '_blank');
+            } else if (result.isDenied) {
+                // Download ICS file
+                this.downloadICSFile(eventDetails);
+                Swal.fire({
+                    title: 'Download Complete',
+                    text: 'Tap the downloaded file to add to your calendar.',
+                    icon: 'success'
+                });
+            }
+        });
+    } else {
+        // iOS and other platforms
+        this.downloadICSFile(eventDetails);
+        setTimeout(() => {
+            Swal.fire({
+                title: 'Calendar Event',
+                text: 'Event file downloaded. It should open your calendar app automatically.',
+                icon: 'success'
+            });
+        }, 500);
+    }
+}
     },
     mounted() {
         // Simulate loading
