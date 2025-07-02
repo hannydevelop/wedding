@@ -44,11 +44,6 @@
                         </div>
                     </div>
 
-                    <div class="rsvp-section">
-                        <div class="rsvp-title">{{ invitationData.rsvpTitle }}</div>
-                        <div class="rsvp-title">Guests: +{{ this.person.guest }}</div>
-                    </div>
-
                     <div class="action-buttons no-print">
                         <button class="btn btn-primary" @click="downloadInvite">
                             📄 Download Invite
@@ -217,9 +212,9 @@ export default {
             const data = this.invitationData;
 
             const eventDetails = {
-                title: `${data.bride} & ${data.groom} White Wedding`,
-                start: '20250614T140000Z',  // Must end in Z for UTC format
-                end: '20250614T180000Z',
+                title: `Ugo & ${data.groom} White Wedding`,
+                start: '20250714T140000Z',  // Must end in Z for UTC format
+                end: '20250714T180000Z',
                 location: `${data.venueName}, ${data.address}`,
                 description: `Traditional Wedding Ceremony for ${data.bride} & ${data.groom}. ${data.rsvpTitle} (${data.rsvpContact})`,
                 uid: `${Date.now()}@peppubuild.com`
