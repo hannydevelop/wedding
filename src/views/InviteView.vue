@@ -208,7 +208,7 @@ export default {
             }, 300); // Wait briefly to ensure QR is visible before capture
         },
 
-        // Method 1: Platform Detection with Different Approaches
+// Method 1: Platform Detection with Different Approaches
 addToCalendar() {
     const data = this.invitationData;
     const eventDetails = {
@@ -234,25 +234,37 @@ addToCalendar() {
     }
 },
 
-// Method for Android - Try Outlook first, then Google Calendar
+// Method for Android - Try native calendar first, then others
 addToCalendarAndroid(eventDetails) {
-    // First try Outlook (many Android users have it installed)
-    this.tryOutlookCalendar(eventDetails)
+    // First try Android's native calendar app
+    this.tryNativeAndroidCalendar(eventDetails)
         .then(success => {
             if (success) {
+                Swal.fire({
+                    title: 'Calendar Opened',
+                    text: 'Event has been sent to your Calendar app.',
+                    icon: 'success'
+                });
+            } else {
+                // If native calendar fails, try Outlook
+                return this.tryOutlookCalendar(eventDetails);
+            }
+        })
+        .then(success => {
+            if (success === false) {
+                // If Outlook fails, try Google Calendar
+                return this.tryGoogleCalendar(eventDetails);
+            } else if (success === true) {
                 Swal.fire({
                     title: 'Calendar Opened',
                     text: 'Event has been sent to Outlook Calendar.',
                     icon: 'success'
                 });
-            } else {
-                // If Outlook fails, try Google Calendar
-                return this.tryGoogleCalendar(eventDetails);
             }
         })
         .then(success => {
             if (success === false) {
-                // Both Outlook and Google Calendar failed, download ICS
+                // All calendar apps failed, download ICS
                 console.log('Calendar apps not available, falling back to ICS download');
                 this.downloadICSFile(eventDetails);
                 Swal.fire({
@@ -278,6 +290,105 @@ addToCalendarAndroid(eventDetails) {
                 icon: 'success'
             });
         });
+},
+
+// Try to open Android's native calendar app
+tryNativeAndroidCalendar(eventDetails) {
+    return new Promise((resolve) => {
+        try {
+            // Convert UTC date to milliseconds for Android intent
+            const startTime = new Date(eventDetails.start.replace('Z', '').replace('T', ' ') + ' UTC').getTime();
+            const endTime = new Date(eventDetails.end.replace('Z', '').replace('T', ' ') + ' UTC').getTime();
+            
+            // Try multiple Android calendar intents
+            const calendarIntents = [
+                // Standard Android Calendar intent
+                `intent://calendar/event?` +
+                `title=${encodeURIComponent(eventDetails.title)}&` +
+                `beginTime=${startTime}&` +
+                `endTime=${endTime}&` +
+                `description=${encodeURIComponent(eventDetails.description)}&` +
+                `eventLocation=${encodeURIComponent(eventDetails.location)}` +
+                `#Intent;scheme=content;package=com.android.calendar;end`,
+                
+                // Samsung Calendar
+                `intent://calendar/event?` +
+                `title=${encodeURIComponent(eventDetails.title)}&` +
+                `beginTime=${startTime}&` +
+                `endTime=${endTime}&` +
+                `description=${encodeURIComponent(eventDetails.description)}&` +
+                `eventLocation=${encodeURIComponent(eventDetails.location)}` +
+                `#Intent;scheme=content;package=com.samsung.android.calendar;end`,
+                
+                // Generic calendar content intent
+                `content://com.android.calendar/events?` +
+                `title=${encodeURIComponent(eventDetails.title)}&` +
+                `dtstart=${startTime}&` +
+                `dtend=${endTime}&` +
+                `description=${encodeURIComponent(eventDetails.description)}&` +
+                `eventLocation=${encodeURIComponent(eventDetails.location)}`
+            ];
+            
+            let attemptIndex = 0;
+            let appOpened = false;
+            
+            const tryNextIntent = () => {
+                if (attemptIndex >= calendarIntents.length) {
+                    resolve(false);
+                    return;
+                }
+                
+                const intentUrl = calendarIntents[attemptIndex];
+                attemptIndex++;
+                
+                const onFocus = () => {
+                    appOpened = true;
+                    window.removeEventListener('focus', onFocus);
+                    resolve(true);
+                };
+                
+                const onBlur = () => {
+                    setTimeout(() => {
+                        if (!appOpened) {
+                            window.removeEventListener('focus', onFocus);
+                            window.removeEventListener('blur', onBlur);
+                            tryNextIntent(); // Try next intent
+                        }
+                    }, 1500);
+                };
+                
+                window.addEventListener('focus', onFocus);
+                window.addEventListener('blur', onBlur);
+                
+                try {
+                    // Try to trigger the intent
+                    window.location.href = intentUrl;
+                    
+                    // Timeout for this attempt
+                    setTimeout(() => {
+                        if (!appOpened) {
+                            window.removeEventListener('focus', onFocus);
+                            window.removeEventListener('blur', onBlur);
+                            tryNextIntent(); // Try next intent
+                        }
+                    }, 2000);
+                    
+                } catch (error) {
+                    console.log(`Intent ${attemptIndex} failed:`, error);
+                    window.removeEventListener('focus', onFocus);
+                    window.removeEventListener('blur', onBlur);
+                    tryNextIntent(); // Try next intent
+                }
+            };
+            
+            // Start trying intents
+            tryNextIntent();
+            
+        } catch (error) {
+            console.log('Native Android calendar not available:', error);
+            resolve(false);
+        }
+    });
 },
 
 // Try to open Outlook Calendar
