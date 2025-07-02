@@ -244,27 +244,15 @@ export default {
 
             if (isAndroid) {
                 try {
-                    // Method 1: Try data URI approach for Android
+                    // Method 1: Try data URI approach for Android (single method only)
                     const dataUri = `data:text/calendar;charset=utf8,${encodeURIComponent(icsContent)}`;
 
-                    // Create a temporary link to trigger the data URI
-                    const link = document.createElement('a');
-                    link.href = dataUri;
-                    link.download = `${eventDetails.title.replace(/\s+/g, '_')}.ics`;
-
-                    // Try to open directly first
+                    // Use only ONE method to avoid multiple downloads
                     window.location.href = dataUri;
-
-                    // Fallback: If direct navigation doesn't work, try click method
-                    setTimeout(() => {
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                    }, 1000);
 
                     Swal.fire({
                         title: 'Opening Calendar',
-                        text: 'Your calendar app should open automatically. If not, check your downloads folder.',
+                        text: 'Your calendar app should open automatically.',
                         icon: 'success',
                         timer: 3000
                     });
