@@ -213,7 +213,7 @@ export default {
 
             const eventDetails = {
                 title: `Ugo & ${data.groom} White Wedding`,
-                start: '20250714T140000Z',  // Must end in Z for UTC format
+                start: '20250714T140000Z',  // UTC format
                 end: '20250714T180000Z',
                 location: `${data.venueName}, ${data.address}`,
                 description: `Traditional Wedding Ceremony for ${data.bride} & ${data.groom}. ${data.rsvpTitle} (${data.rsvpContact})`,
@@ -239,7 +239,7 @@ export default {
                 'TRANSP:OPAQUE',
                 'END:VEVENT',
                 'END:VCALENDAR'
-            ].join('\r\n'); // ICS files require CRLF line endings
+            ].join('\r\n');
 
             const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
             const url = URL.createObjectURL(blob);
@@ -251,6 +251,12 @@ export default {
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
 
+            // ✅ Show success message after download
+            Swal.fire({
+                title: 'Download Complete',
+                text: 'Tap the downloaded file to add the event to your calendar.',
+                icon: 'success'
+            });
         }
     },
     mounted() {
@@ -265,14 +271,14 @@ export default {
         document.removeEventListener('mousemove', this.handleMouseMove);
     },
     async created() {
-      const { data, error } = await supabase
-        .from('people')
-        .select('*');
+        const { data, error } = await supabase
+            .from('people')
+            .select('*');
 
-      if (error) {
-        console.error('Error fetching crew:', error.message);
-        return [];
-      }
+        if (error) {
+            console.error('Error fetching crew:', error.message);
+            return [];
+        }
 
         const id = this.$route.params.id;
         this.person = data.find(p => p.id === id);
