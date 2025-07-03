@@ -314,7 +314,7 @@ createAndroidCalendarIntent(eventDetails) {
   const endTime = new Date('2025-07-14T18:00:00Z').getTime();
   
   // Try Google Calendar Intent first
-  const googleCalendarIntent = `intent://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(eventDetails.title)}&dates=${eventDetails.start}/${eventDetails.end}&details=${encodeURIComponent(eventDetails.description)}&location=${encodeURIComponent(eventDetails.location)}#Intent;scheme=https;package=com.google.android.calendar;end`;
+  const googleCalendarIntent = `intent://com.samsung.android.calendar/add_event?title=${encodeURIComponent(eventDetails.title)}&start=${eventDetails.start}&end=${eventDetails.end}#Intent;scheme=samsungcalendar;package=com.samsung.android.calendar;end`;
   
   return googleCalendarIntent;
 },
