@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@ebarooni/capacitor-calendar": "^7.2.0",
     "@supabase/supabase-js": "^2.50.2",
     "html2pdf": "^0.0.11",
     "html2pdf.js": "^0.10.3",
