@@ -208,235 +208,168 @@ export default {
                     });
             }, 300); // Wait briefly to ensure QR is visible before capture
         },
-// Method 1: Use Intent URL to force calendar app opening
-addToCalendar() {
-  const data = this.invitationData;
-  const eventDetails = {
-    title: `Ugo & ${data.groom} White Wedding`,
-    start: '20250714T140000Z',
-    end: '20250714T180000Z',
-    location: `${data.venueName}, ${data.address}`,
-    description: `Traditional Wedding Ceremony for ${data.bride} & ${data.groom}. ${data.rsvpTitle} (${data.rsvpContact})`,
-    uid: `${Date.now()}@peppubuild.com`
-  };
+        addToCalendar() {
+            const data = this.invitationData;
+            const eventDetails = {
+                title: `Ugo & ${data.groom} White Wedding`,
+                start: '20250714T140000Z', // UTC format
+                end: '20250714T180000Z',
+                location: `${data.venueName}, ${data.address}`,
+                description: `Traditional Wedding Ceremony for ${data.bride} & ${data.groom}. ${data.rsvpTitle} (${data.rsvpContact})`,
+                uid: `${Date.now()}@peppubuild.com`
+            };
 
-  const isAndroid = /Android/i.test(navigator.userAgent);
-  
-  if (isAndroid) {
-    // Android: Use multiple approaches to force execution
-    this.forceAndroidCalendarOpen(eventDetails);
-  } else {
-    // iOS: Use standard blob method
-    this.standardIcsDownload(eventDetails);
-  }
-},
+            // Check if we're on Android
+            const isAndroid = /Android/i.test(navigator.userAgent);
 
-forceAndroidCalendarOpen(eventDetails) {
-  const icsContent = this.generateIcsContent(eventDetails);
-  
-  // Method 1: Try Android Intent first
-  const intentUrl = this.createAndroidCalendarIntent(eventDetails);
-  
-  try {
-    // Try to open using Android Intent
-    window.location.href = intentUrl;
-    
-    // Show success message
-    Swal.fire({
-      title: 'Opening Calendar',
-      text: 'Your calendar app is opening...',
-      icon: 'success',
-      timer: 2000
-    });
-    
-  } catch (error) {
-    console.log('Intent failed, trying alternative methods');
-    
-    // Method 2: Force download with specific MIME type and immediate redirect
-    this.forceIcsDownloadAndOpen(icsContent, eventDetails);
-  }
-},
+            if (isAndroid) {
+                // Try Google Calendar first on Android
+                this.tryGoogleCalendar(eventDetails);
+            } else {
+                // For non-Android devices, go straight to ICS download
+                this.downloadICS(eventDetails);
+            }
+        },
 
-// Method 2: Force download with automatic file opening attempt
-forceIcsDownloadAndOpen(icsContent, eventDetails) {
-  // Create blob with specific calendar MIME type
-  const blob = new Blob([icsContent], { 
-    type: 'text/calendar;charset=utf-8;method=REQUEST' 
-  });
-  
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `${eventDetails.title.replace(/\s+/g, '_')}.ics`;
-  
-  // Add specific attributes to force calendar association
-  link.setAttribute('type', 'text/calendar');
-  link.setAttribute('rel', 'calendar');
-  
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  
-  // Immediately try to open the downloaded file
-  setTimeout(() => {
-    this.attemptFileOpen(url);
-  }, 1000);
-  
-  URL.revokeObjectURL(url);
-  
-  // Show instructions to user
-  Swal.fire({
-    title: 'File Downloaded',
-    html: `
-      <p>Calendar file downloaded successfully!</p>
-      <p><strong>Next steps:</strong></p>
-      <ol style="text-align: left; margin-left: 20px;">
-        <li>Check your downloads folder</li>
-        <li>Tap the downloaded .ics file</li>
-        <li>Choose your calendar app</li>
-      </ol>
-    `,
-    icon: 'info',
-    confirmButtonText: 'Open Downloads Folder',
-    showCancelButton: true,
-    cancelButtonText: 'OK'
-  }).then((result) => {
-    if (result.isConfirmed) {
-      // Try to open downloads folder
-      this.openDownloadsFolder();
-    }
-  });
-},
+        tryGoogleCalendar(eventDetails) {
+            // Format dates for Google Calendar URL (remove Z and add format)
+            const startDate = eventDetails.start.replace('Z', '');
+            const endDate = eventDetails.end.replace('Z', '');
 
-// Method 3: Create Android Calendar Intent URL
-createAndroidCalendarIntent(eventDetails) {
-  const startTime = new Date('2025-07-14T14:00:00Z').getTime();
-  const endTime = new Date('2025-07-14T18:00:00Z').getTime();
-  
-  // Try Google Calendar Intent first
-  const googleCalendarIntent = `intent://com.samsung.android.calendar/add_event?title=${encodeURIComponent(eventDetails.title)}&start=${eventDetails.start}&end=${eventDetails.end}#Intent;scheme=samsungcalendar;package=com.samsung.android.calendar;end`;
-  
-  return googleCalendarIntent;
-},
+            // Create Google Calendar URL
+            const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(eventDetails.title)}&dates=${startDate}/${endDate}&details=${encodeURIComponent(eventDetails.description)}&location=${encodeURIComponent(eventDetails.location)}&sf=true&output=xml`;
 
-// Method 4: Try to open downloads folder
-openDownloadsFolder() {
-  try {
-    // Multiple attempts to open downloads
-    const downloadPaths = [
-      'intent://downloads/#Intent;scheme=file;package=com.android.documentsui;end',
-      'intent://downloads/#Intent;scheme=content;package=com.android.providers.downloads.ui;end',
-      'content://downloads/my_downloads'
-    ];
-    
-    downloadPaths.forEach((path, index) => {
-      setTimeout(() => {
-        try {
-          window.location.href = path;
-        } catch (e) {
-          console.log(`Download path ${index + 1} failed`);
+            // Create a temporary link to test if Google Calendar opens
+            const testLink = document.createElement('a');
+            testLink.href = googleCalendarUrl;
+            testLink.target = '_blank';
+            testLink.style.display = 'none';
+            document.body.appendChild(testLink);
+
+            // Track if the user left the page (indicating Google Calendar opened)
+            let userLeftPage = false;
+
+            const handleVisibilityChange = () => {
+                if (document.hidden) {
+                    userLeftPage = true;
+                }
+            };
+
+            const handleFocus = () => {
+                if (userLeftPage) {
+                    // User came back, Google Calendar likely opened successfully
+                    document.removeEventListener('visibilitychange', handleVisibilityChange);
+                    window.removeEventListener('focus', handleFocus);
+                    document.body.removeChild(testLink);
+                    return;
+                }
+            };
+
+            // Add event listeners
+            document.addEventListener('visibilitychange', handleVisibilityChange);
+            window.addEventListener('focus', handleFocus);
+
+            // Try to open Google Calendar
+            testLink.click();
+
+            // Fallback to ICS after a short delay if Google Calendar didn't open
+            setTimeout(() => {
+                if (!userLeftPage) {
+                    // Google Calendar didn't open, cleanup and fallback to ICS
+                    document.removeEventListener('visibilitychange', handleVisibilityChange);
+                    window.removeEventListener('focus', handleFocus);
+                    document.body.removeChild(testLink);
+
+                    // Download ICS file with notification
+                    this.downloadICS(eventDetails, true);
+                }
+            }, 2000);
+        },
+
+        downloadICS(eventDetails, showNotification = false) {
+            const icsContent = [
+                'BEGIN:VCALENDAR',
+                'VERSION:2.0',
+                'CALSCALE:GREGORIAN',
+                'PRODID:-//Peppubuild//EN',
+                'METHOD:PUBLISH',
+                'BEGIN:VEVENT',
+                `UID:${eventDetails.uid}`,
+                `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z`,
+                `DTSTART:${eventDetails.start}`,
+                `DTEND:${eventDetails.end}`,
+                `SUMMARY:${eventDetails.title}`,
+                `DESCRIPTION:${eventDetails.description}`,
+                `LOCATION:${eventDetails.location}`,
+                'STATUS:CONFIRMED',
+                'SEQUENCE:0',
+                'TRANSP:OPAQUE',
+                'END:VEVENT',
+                'END:VCALENDAR'
+            ].join('\r\n');
+
+            const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${eventDetails.title.replace(/\s+/g, '_')}.ics`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            // Show notification only for Android ICS downloads or when explicitly requested
+            const isAndroid = /Android/i.test(navigator.userAgent);
+
+            if (isAndroid && showNotification) {
+                Swal.fire({
+                    title: 'Calendar File Downloaded',
+                    html: `
+                <div style="text-align: left; font-size: 14px;">
+                    <p><strong>To add this event to your calendar:</strong></p>
+                    <ol style="padding-left: 20px;">
+                        <li>Open your <strong>Downloads</strong> folder</li>
+                        <li>Tap the downloaded <strong>.ics</strong> file</li>
+                        <li>Choose <strong>Calendar</strong> or <strong>Google Calendar</strong></li>
+                        <li>Tap <strong>Add to Calendar</strong></li>
+                    </ol>
+                    <p style="margin-top: 15px; font-size: 12px; color: #666;">
+                        💡 The file will usually be in your notification panel or Downloads app
+                    </p>
+                </div>
+            `,
+                    icon: 'info',
+                    confirmButtonText: 'Got it!',
+                    confirmButtonColor: '#4CAF50'
+                });
+            }
+        },
+
+        // Alternative method using Android Intent (if you want to try native calendar app)
+        tryAndroidCalendarIntent(eventDetails) {
+            // Convert UTC to milliseconds
+            const startMs = new Date(eventDetails.start.replace('Z', '')).getTime();
+            const endMs = new Date(eventDetails.end.replace('Z', '')).getTime();
+
+            // Create Android Calendar Intent URL
+            const intentUrl = `intent://calendar/0#Intent;` +
+                `action=android.intent.action.INSERT;` +
+                `type=vnd.android.cursor.item/event;` +
+                `S.title=${encodeURIComponent(eventDetails.title)};` +
+                `S.description=${encodeURIComponent(eventDetails.description)};` +
+                `S.eventLocation=${encodeURIComponent(eventDetails.location)};` +
+                `l.beginTime=${startMs};` +
+                `l.endTime=${endMs};` +
+                `end`;
+
+            // Try to open with intent
+            window.location.href = intentUrl;
+
+            // Fallback to ICS after delay
+            setTimeout(() => {
+                this.downloadICS(eventDetails, true);
+            }, 3000);
         }
-      }, index * 500);
-    });
-    
-  } catch (error) {
-    console.error('Could not open downloads folder', error);
-  }
-},
-
-// Method 5: Attempt to programmatically open file
-attemptFileOpen(fileUrl) {
-  try {
-    // Try various methods to open the file
-    const methods = [
-      () => window.open(fileUrl, '_blank'),
-      () => window.location.assign(fileUrl),
-      () => {
-        const iframe = document.createElement('iframe');
-        iframe.src = fileUrl;
-        iframe.style.display = 'none';
-        document.body.appendChild(iframe);
-        setTimeout(() => document.body.removeChild(iframe), 2000);
-      }
-    ];
-    
-    methods.forEach((method, index) => {
-      setTimeout(method, index * 1000);
-    });
-    
-  } catch (error) {
-    console.error('Could not open file programmatically', error);
-  }
-},
-
-// Method 6: Alternative - Direct calendar app opening with deep links
-tryDirectCalendarOpen(eventDetails) {
-  const calendarApps = [
-    // Google Calendar
-    `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(eventDetails.title)}&dates=${eventDetails.start}/${eventDetails.end}&details=${encodeURIComponent(eventDetails.description)}&location=${encodeURIComponent(eventDetails.location)}`,
-    
-    // Samsung Calendar Intent
-    `intent://com.samsung.android.calendar/add_event?title=${encodeURIComponent(eventDetails.title)}&start=${eventDetails.start}&end=${eventDetails.end}#Intent;scheme=samsungcalendar;package=com.samsung.android.calendar;end`,
-    
-    // Generic Calendar Intent
-    `intent://calendar/events/insert?title=${encodeURIComponent(eventDetails.title)}&beginTime=${new Date('2025-07-14T14:00:00Z').getTime()}&endTime=${new Date('2025-07-14T18:00:00Z').getTime()}#Intent;scheme=content;package=com.android.calendar;end`
-  ];
-  
-  // Try each calendar app
-  calendarApps.forEach((url, index) => {
-    setTimeout(() => {
-      try {
-        window.location.href = url;
-      } catch (e) {
-        console.log(`Calendar app ${index + 1} not available`);
-      }
-    }, index * 2000);
-  });
-},
-
-// Generate ICS content
-generateIcsContent(eventDetails) {
-  return [
-    'BEGIN:VCALENDAR',
-    'VERSION:2.0',
-    'CALSCALE:GREGORIAN',
-    'PRODID:-//Peppubuild//EN',
-    'METHOD:PUBLISH',
-    'BEGIN:VEVENT',
-    `UID:${eventDetails.uid}`,
-    `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z`,
-    `DTSTART:${eventDetails.start}`,
-    `DTEND:${eventDetails.end}`,
-    `SUMMARY:${eventDetails.title}`,
-    `DESCRIPTION:${eventDetails.description}`,
-    `LOCATION:${eventDetails.location}`,
-    'STATUS:CONFIRMED',
-    'SEQUENCE:0',
-    'TRANSP:OPAQUE',
-    'END:VEVENT',
-    'END:VCALENDAR'
-  ].join('\r\n');
-},
-
-// Standard ICS download for iOS
-standardIcsDownload(eventDetails) {
-  const icsContent = this.generateIcsContent(eventDetails);
-  const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `${eventDetails.title.replace(/\s+/g, '_')}.ics`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-
-  Swal.fire({
-    title: 'Calendar Event Downloaded',
-    text: 'The event should open in your calendar automatically.',
-    icon: 'success'
-  });
-}
     },
     mounted() {
         // Simulate loading
