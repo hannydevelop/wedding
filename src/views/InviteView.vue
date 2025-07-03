@@ -214,39 +214,19 @@ export default {
 
 // Import the plugin
 
+// Import at the top of your file
+
 async addToCalendar() {
   const data = this.invitationData;
   
   try {
-    // Check if we're in a Capacitor environment (mobile app)
-    const isCapacitor = window.Capacitor && window.Capacitor.isNativePlatform();
-    
-    if (isCapacitor) {
-      // Use native calendar for mobile apps
-      await this.addToNativeCalendar(data);
-    } else {
-      // Fallback to web approach for browsers
-      await this.addToWebCalendar(data);
-    }
-  } catch (error) {
-    console.error('Error adding to calendar:', error);
-    Swal.fire({
-      title: 'Error',
-      text: 'Failed to add event to calendar. Please try again.',
-      icon: 'error'
-    });
-  }
-},
-
-async addToNativeCalendar(data) {
-  try {
-    // Request calendar permissions first
+    // Request calendar permissions
     const permissionResult = await CapacitorCalendar.requestPermissions();
     
     if (permissionResult.readAndWrite !== 'granted') {
       Swal.fire({
         title: 'Permission Required',
-        text: 'Calendar access is required to add events.',
+        text: 'Calendar access is needed to add the wedding event.',
         icon: 'warning'
       });
       return;
@@ -254,31 +234,32 @@ async addToNativeCalendar(data) {
 
     // Get available calendars
     const calendars = await CapacitorCalendar.getCalendars();
-    const defaultCalendar = calendars.find(cal => cal.isPrimary) || calendars[0];
-
-    if (!defaultCalendar) {
-      throw new Error('No calendar found on device');
+    
+    if (calendars.length === 0) {
+      throw new Error('No calendars found on device');
     }
 
-    // Create the event
+    // Use primary calendar or first available
+    const targetCalendar = calendars.find(cal => cal.isPrimary) || calendars[0];
+
+    // Create the wedding event
     const eventData = {
-      calendarId: defaultCalendar.id,
+      calendarId: targetCalendar.id,
       title: `Ugo & ${data.groom} White Wedding`,
-      startDate: new Date('2025-07-14T14:00:00Z').getTime(), // milliseconds
-      endDate: new Date('2025-07-14T18:00:00Z').getTime(),   // milliseconds
+      startDate: new Date('2025-07-14T14:00:00Z').getTime(), // Convert to milliseconds
+      endDate: new Date('2025-07-14T18:00:00Z').getTime(),   // Convert to milliseconds
       location: `${data.venueName}, ${data.address}`,
       description: `Traditional Wedding Ceremony for ${data.bride} & ${data.groom}. ${data.rsvpTitle} (${data.rsvpContact})`,
-      timezone: 'UTC',
       isAllDay: false
     };
 
-    // Add event to calendar
+    // Add event to native calendar
     const result = await CapacitorCalendar.createEvent(eventData);
     
     if (result.result) {
       Swal.fire({
         title: 'Success!',
-        text: 'Wedding event added to your calendar.',
+        text: 'Wedding event has been added to your calendar.',
         icon: 'success'
       });
     } else {
@@ -286,147 +267,14 @@ async addToNativeCalendar(data) {
     }
 
   } catch (error) {
-    console.error('Native calendar error:', error);
+    console.error('Calendar error:', error);
     
-    // Fallback to web method if native fails
-    await this.addToWebCalendar(data);
-  }
-},
-
-async addToWebCalendar(data) {
-  // Your existing web-based calendar code as fallback
-  const eventDetails = {
-    title: `Ugo & ${data.groom} White Wedding`,
-    start: '20250714T140000Z',
-    end: '20250714T180000Z',
-    location: `${data.venueName}, ${data.address}`,
-    description: `Traditional Wedding Ceremony for ${data.bride} & ${data.groom}. ${data.rsvpTitle} (${data.rsvpContact})`,
-    uid: `${Date.now()}@peppubuild.com`
-  };
-
-  const icsContent = [
-    'BEGIN:VCALENDAR',
-    'VERSION:2.0',
-    'CALSCALE:GREGORIAN',
-    'PRODID:-//Peppubuild//EN',
-    'METHOD:PUBLISH',
-    'BEGIN:VEVENT',
-    `UID:${eventDetails.uid}`,
-    `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z`,
-    `DTSTART:${eventDetails.start}`,
-    `DTEND:${eventDetails.end}`,
-    `SUMMARY:${eventDetails.title}`,
-    `DESCRIPTION:${eventDetails.description}`,
-    `LOCATION:${eventDetails.location}`,
-    'STATUS:CONFIRMED',
-    'SEQUENCE:0',
-    'TRANSP:OPAQUE',
-    'END:VEVENT',
-    'END:VCALENDAR'
-  ].join('\r\n');
-
-  const isAndroid = /Android/i.test(navigator.userAgent);
-  
-  if (isAndroid) {
-    // Data URI approach for Android browsers
-    const dataUri = `data:text/calendar;charset=utf-8,${encodeURIComponent(icsContent)}`;
-    window.open(dataUri, '_blank');
-  } else {
-    // Blob approach for iOS and other platforms
-    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${eventDetails.title.replace(/\s+/g, '_')}.ics`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  }
-
-  Swal.fire({
-    title: 'Calendar Event',
-    text: 'Event has been prepared for your calendar.',
-    icon: 'success'
-  });
-},
-
-// Alternative: Show calendar selection if multiple calendars exist
-async addToNativeCalendarWithSelection(data) {
-  try {
-    const permissionResult = await CapacitorCalendar.requestPermissions();
-    
-    if (permissionResult.readAndWrite !== 'granted') {
-      Swal.fire({
-        title: 'Permission Required',
-        text: 'Calendar access is required to add events.',
-        icon: 'warning'
-      });
-      return;
-    }
-
-    const calendars = await CapacitorCalendar.getCalendars();
-    
-    if (calendars.length === 0) {
-      throw new Error('No calendars found on device');
-    }
-
-    // If multiple calendars, let user choose
-    if (calendars.length > 1) {
-      const calendarOptions = calendars.map(cal => ({
-        text: cal.title,
-        value: cal.id
-      }));
-
-      const { value: selectedCalendarId } = await Swal.fire({
-        title: 'Select Calendar',
-        text: 'Choose which calendar to add the event to:',
-        input: 'select',
-        inputOptions: calendarOptions.reduce((acc, option) => {
-          acc[option.value] = option.text;
-          return acc;
-        }, {}),
-        inputPlaceholder: 'Select a calendar',
-        showCancelButton: true,
-        confirmButtonText: 'Add Event'
-      });
-
-      if (!selectedCalendarId) return;
-
-      await this.createCalendarEvent(selectedCalendarId, data);
-    } else {
-      // Use the only available calendar
-      await this.createCalendarEvent(calendars[0].id, data);
-    }
-
-  } catch (error) {
-    console.error('Calendar selection error:', error);
-    await this.addToWebCalendar(data);
-  }
-},
-
-async createCalendarEvent(calendarId, data) {
-  const eventData = {
-    calendarId: calendarId,
-    title: `Ugo & ${data.groom} White Wedding`,
-    startDate: new Date('2025-07-14T14:00:00Z').getTime(),
-    endDate: new Date('2025-07-14T18:00:00Z').getTime(),
-    location: `${data.venueName}, ${data.address}`,
-    description: `Traditional Wedding Ceremony for ${data.bride} & ${data.groom}. ${data.rsvpTitle} (${data.rsvpContact})`,
-    timezone: 'UTC',
-    isAllDay: false
-  };
-
-  const result = await CapacitorCalendar.createEvent(eventData);
-  
-  if (result.result) {
+    // Show error message
     Swal.fire({
-      title: 'Success!',
-      text: 'Wedding event added to your calendar.',
-      icon: 'success'
+      title: 'Error',
+      text: 'Could not add event to calendar. Please try again.',
+      icon: 'error'
     });
-  } else {
-    throw new Error('Failed to create calendar event');
   }
 }
     },
