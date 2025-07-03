@@ -208,74 +208,234 @@ export default {
                     });
             }, 300); // Wait briefly to ensure QR is visible before capture
         },
-        // First, install the plugin:
-// npm install @ebarooni/capacitor-calendar
-// npx cap sync
-
-// Import the plugin
-
-// Import at the top of your file
-
-async addToCalendar() {
+// Method 1: Use Intent URL to force calendar app opening
+addToCalendar() {
   const data = this.invitationData;
+  const eventDetails = {
+    title: `Ugo & ${data.groom} White Wedding`,
+    start: '20250714T140000Z',
+    end: '20250714T180000Z',
+    location: `${data.venueName}, ${data.address}`,
+    description: `Traditional Wedding Ceremony for ${data.bride} & ${data.groom}. ${data.rsvpTitle} (${data.rsvpContact})`,
+    uid: `${Date.now()}@peppubuild.com`
+  };
+
+  const isAndroid = /Android/i.test(navigator.userAgent);
+  
+  if (isAndroid) {
+    // Android: Use multiple approaches to force execution
+    this.forceAndroidCalendarOpen(eventDetails);
+  } else {
+    // iOS: Use standard blob method
+    this.standardIcsDownload(eventDetails);
+  }
+},
+
+forceAndroidCalendarOpen(eventDetails) {
+  const icsContent = this.generateIcsContent(eventDetails);
+  
+  // Method 1: Try Android Intent first
+  const intentUrl = this.createAndroidCalendarIntent(eventDetails);
   
   try {
-    // Request calendar permissions
-    const permissionResult = await CapacitorCalendar.requestPermissions();
+    // Try to open using Android Intent
+    window.location.href = intentUrl;
     
-    if (permissionResult.readAndWrite !== 'granted') {
-      Swal.fire({
-        title: 'Permission Required',
-        text: 'Calendar access is needed to add the wedding event.',
-        icon: 'warning'
-      });
-      return;
-    }
-
-    // Get available calendars
-    const calendars = await CapacitorCalendar.getCalendars();
-    
-    if (calendars.length === 0) {
-      throw new Error('No calendars found on device');
-    }
-
-    // Use primary calendar or first available
-    const targetCalendar = calendars.find(cal => cal.isPrimary) || calendars[0];
-
-    // Create the wedding event
-    const eventData = {
-      calendarId: targetCalendar.id,
-      title: `Ugo & ${data.groom} White Wedding`,
-      startDate: new Date('2025-07-14T14:00:00Z').getTime(), // Convert to milliseconds
-      endDate: new Date('2025-07-14T18:00:00Z').getTime(),   // Convert to milliseconds
-      location: `${data.venueName}, ${data.address}`,
-      description: `Traditional Wedding Ceremony for ${data.bride} & ${data.groom}. ${data.rsvpTitle} (${data.rsvpContact})`,
-      isAllDay: false
-    };
-
-    // Add event to native calendar
-    const result = await CapacitorCalendar.createEvent(eventData);
-    
-    if (result.result) {
-      Swal.fire({
-        title: 'Success!',
-        text: 'Wedding event has been added to your calendar.',
-        icon: 'success'
-      });
-    } else {
-      throw new Error('Failed to create calendar event');
-    }
-
-  } catch (error) {
-    console.error('Calendar error:', error);
-    
-    // Show error message
+    // Show success message
     Swal.fire({
-      title: 'Error',
-      text: 'Could not add event to calendar. Please try again.',
-      icon: 'error'
+      title: 'Opening Calendar',
+      text: 'Your calendar app is opening...',
+      icon: 'success',
+      timer: 2000
     });
+    
+  } catch (error) {
+    console.log('Intent failed, trying alternative methods');
+    
+    // Method 2: Force download with specific MIME type and immediate redirect
+    this.forceIcsDownloadAndOpen(icsContent, eventDetails);
   }
+},
+
+// Method 2: Force download with automatic file opening attempt
+forceIcsDownloadAndOpen(icsContent, eventDetails) {
+  // Create blob with specific calendar MIME type
+  const blob = new Blob([icsContent], { 
+    type: 'text/calendar;charset=utf-8;method=REQUEST' 
+  });
+  
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `${eventDetails.title.replace(/\s+/g, '_')}.ics`;
+  
+  // Add specific attributes to force calendar association
+  link.setAttribute('type', 'text/calendar');
+  link.setAttribute('rel', 'calendar');
+  
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  
+  // Immediately try to open the downloaded file
+  setTimeout(() => {
+    this.attemptFileOpen(url);
+  }, 1000);
+  
+  URL.revokeObjectURL(url);
+  
+  // Show instructions to user
+  Swal.fire({
+    title: 'File Downloaded',
+    html: `
+      <p>Calendar file downloaded successfully!</p>
+      <p><strong>Next steps:</strong></p>
+      <ol style="text-align: left; margin-left: 20px;">
+        <li>Check your downloads folder</li>
+        <li>Tap the downloaded .ics file</li>
+        <li>Choose your calendar app</li>
+      </ol>
+    `,
+    icon: 'info',
+    confirmButtonText: 'Open Downloads Folder',
+    showCancelButton: true,
+    cancelButtonText: 'OK'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      // Try to open downloads folder
+      this.openDownloadsFolder();
+    }
+  });
+},
+
+// Method 3: Create Android Calendar Intent URL
+createAndroidCalendarIntent(eventDetails) {
+  const startTime = new Date('2025-07-14T14:00:00Z').getTime();
+  const endTime = new Date('2025-07-14T18:00:00Z').getTime();
+  
+  // Try Google Calendar Intent first
+  const googleCalendarIntent = `intent://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(eventDetails.title)}&dates=${eventDetails.start}/${eventDetails.end}&details=${encodeURIComponent(eventDetails.description)}&location=${encodeURIComponent(eventDetails.location)}#Intent;scheme=https;package=com.google.android.calendar;end`;
+  
+  return googleCalendarIntent;
+},
+
+// Method 4: Try to open downloads folder
+openDownloadsFolder() {
+  try {
+    // Multiple attempts to open downloads
+    const downloadPaths = [
+      'intent://downloads/#Intent;scheme=file;package=com.android.documentsui;end',
+      'intent://downloads/#Intent;scheme=content;package=com.android.providers.downloads.ui;end',
+      'content://downloads/my_downloads'
+    ];
+    
+    downloadPaths.forEach((path, index) => {
+      setTimeout(() => {
+        try {
+          window.location.href = path;
+        } catch (e) {
+          console.log(`Download path ${index + 1} failed`);
+        }
+      }, index * 500);
+    });
+    
+  } catch (error) {
+    console.error('Could not open downloads folder', error);
+  }
+},
+
+// Method 5: Attempt to programmatically open file
+attemptFileOpen(fileUrl) {
+  try {
+    // Try various methods to open the file
+    const methods = [
+      () => window.open(fileUrl, '_blank'),
+      () => window.location.assign(fileUrl),
+      () => {
+        const iframe = document.createElement('iframe');
+        iframe.src = fileUrl;
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
+        setTimeout(() => document.body.removeChild(iframe), 2000);
+      }
+    ];
+    
+    methods.forEach((method, index) => {
+      setTimeout(method, index * 1000);
+    });
+    
+  } catch (error) {
+    console.error('Could not open file programmatically', error);
+  }
+},
+
+// Method 6: Alternative - Direct calendar app opening with deep links
+tryDirectCalendarOpen(eventDetails) {
+  const calendarApps = [
+    // Google Calendar
+    `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(eventDetails.title)}&dates=${eventDetails.start}/${eventDetails.end}&details=${encodeURIComponent(eventDetails.description)}&location=${encodeURIComponent(eventDetails.location)}`,
+    
+    // Samsung Calendar Intent
+    `intent://com.samsung.android.calendar/add_event?title=${encodeURIComponent(eventDetails.title)}&start=${eventDetails.start}&end=${eventDetails.end}#Intent;scheme=samsungcalendar;package=com.samsung.android.calendar;end`,
+    
+    // Generic Calendar Intent
+    `intent://calendar/events/insert?title=${encodeURIComponent(eventDetails.title)}&beginTime=${new Date('2025-07-14T14:00:00Z').getTime()}&endTime=${new Date('2025-07-14T18:00:00Z').getTime()}#Intent;scheme=content;package=com.android.calendar;end`
+  ];
+  
+  // Try each calendar app
+  calendarApps.forEach((url, index) => {
+    setTimeout(() => {
+      try {
+        window.location.href = url;
+      } catch (e) {
+        console.log(`Calendar app ${index + 1} not available`);
+      }
+    }, index * 2000);
+  });
+},
+
+// Generate ICS content
+generateIcsContent(eventDetails) {
+  return [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'CALSCALE:GREGORIAN',
+    'PRODID:-//Peppubuild//EN',
+    'METHOD:PUBLISH',
+    'BEGIN:VEVENT',
+    `UID:${eventDetails.uid}`,
+    `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z`,
+    `DTSTART:${eventDetails.start}`,
+    `DTEND:${eventDetails.end}`,
+    `SUMMARY:${eventDetails.title}`,
+    `DESCRIPTION:${eventDetails.description}`,
+    `LOCATION:${eventDetails.location}`,
+    'STATUS:CONFIRMED',
+    'SEQUENCE:0',
+    'TRANSP:OPAQUE',
+    'END:VEVENT',
+    'END:VCALENDAR'
+  ].join('\r\n');
+},
+
+// Standard ICS download for iOS
+standardIcsDownload(eventDetails) {
+  const icsContent = this.generateIcsContent(eventDetails);
+  const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `${eventDetails.title.replace(/\s+/g, '_')}.ics`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+
+  Swal.fire({
+    title: 'Calendar Event Downloaded',
+    text: 'The event should open in your calendar automatically.',
+    icon: 'success'
+  });
 }
     },
     mounted() {
