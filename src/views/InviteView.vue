@@ -56,6 +56,10 @@
                         </button>
                     </div>
 
+                    <div class="nda-text">
+                        {{ invitationData.ndaText }}
+                    </div>
+
                     <div class="qr-container" style="display: none; text-align: center; margin-top: 20px;">
                         <canvas id="qr-code"></canvas>
                         <p style="font-size: 12px;">Scan to verify invite</p>
@@ -120,20 +124,15 @@ export default {
     computed: {
         invitationData() {
             return {
-                familiesText: `The families of Rev. Edward & Mrs Patience Ukpai of
-                        Amuma, Ohafia LGA, Abia State
-
-                        and
-
-                        Mr. Bernard & Late Mrs. Virgina Nnalue of Awba Ofemili
-                         in Awka North LGA, Anambra State
+                familiesText: `Dama and Chidimma, with the blessing of their families 
 
                         cordially invite:`,
+                ndaText: 'Please note: Photography and video recording are not permitted during the ceremony. We kindly ask all guests to honor this request.',
                 invitedGuest: this.person.name,
                 eventType: "to the Traditional Wedding of",
-                bride: "Ugochi",
-                groom: "Bertram",
-                date: "14th June, 2025",
+                bride: "Chidimma",
+                groom: "Dama",
+                date: "26th September, 2025",
                 time: "at two o'clock in the afternoon",
                 venueName: "Hollywood Event Center",
                 address: "Enugu-Onitsha Expressway, Agu-Awka",
@@ -212,8 +211,8 @@ export default {
             const data = this.invitationData;
             const eventDetails = {
                 title: `Ugo & ${data.groom} White Wedding`,
-                start: '20250714T140000Z', // UTC format
-                end: '20250714T180000Z',
+                start: '20250926T140000Z', // UTC format
+                end: '20250926T180000Z',
                 location: `${data.venueName}, ${data.address}`,
                 description: `Traditional Wedding Ceremony for ${data.bride} & ${data.groom}. ${data.rsvpTitle} (${data.rsvpContact})`,
                 uid: `${Date.now()}@peppubuild.com`
@@ -413,6 +412,9 @@ export default {
     overflow: hidden;
     position: relative;
     border: 1px solid rgba(212, 175, 55, 0.2);
+    min-height: 100vh;
+    padding: 20px;
+    font-family: 'Georgia', 'Times New Roman', serif;
 }
 
 .invitation-container * {
@@ -447,7 +449,6 @@ export default {
     left: 0;
     right: 0;
     height: 30px;
-    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120"><path d="M0,60 Q300,0 600,60 T1200,60 L1200,120 L0,120 Z" fill="%23ffffff"/></svg>') repeat-x;
     background-size: 200px 30px;
 }
 
@@ -477,8 +478,19 @@ export default {
     opacity: 0.8;
 }
 
+.nda-text {
+    font-size: 14px;
+    line-height: 1.6;
+    margin-bottom: 30px;
+    color: black;
+    opacity: 0.8;
+    padding-top: 10px;
+    font-weight: bolder;
+}
+
 .invitation-line {
     font-size: 18px;
+    font-weight: bolder;
     font-style: italic;
     margin-bottom: 20px;
     color: var(--deep-gold);
@@ -733,14 +745,27 @@ export default {
 }
 
 .body-container {
-    background-image: url('/wedding.jpg');
-    background-size: cover;
-    /* stretches to cover the container */
-    background-repeat: no-repeat;
-    /* prevents tiling */
-    background-position: center;
-    /* centers the image */
-    background-attachment: fixed;
-    /* optional: keeps background fixed while scrolling */
+  position: relative;
+  background: transparent;
+  overflow: hidden; /* ensures blur doesn’t spill outside */
 }
+
+.body-container::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(
+      rgba(0, 0, 0, 0.5),   /* black overlay with 50% opacity */
+      rgba(0, 0, 0, 0.5)
+    ),
+    url('/coverr.jpg');
+  background-size: cover;        /* stretches to cover container */
+  background-repeat: no-repeat;  /* prevents tiling */
+  background-position: center;   /* centers the image */
+  background-attachment: fixed;  /* keeps background fixed while scrolling */
+  filter: blur(8px);
+  transform: scale(1.1); /* avoids sharp blur edges at borders */
+  z-index: -1; /* keeps background behind content */
+}
+
 </style>
