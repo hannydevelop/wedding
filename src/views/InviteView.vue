@@ -11,39 +11,61 @@
         <!-- Main App -->
         <div v-else class="app-container">
             <div v-if="person" class="invitation-container">
-                <div class="header-decoration"></div>
+                <div>
+                    <div class="frame">
+                        <div class="frame-red">
+                            <div>
+                                <div class="line-with-text">
+                                    <span>{{ invitationData.invitedGuest }}</span>
+                                </div>
+                                <div class="celebrating">JOIN US IN CELEBRATING</div>
+                                <div class="image-container">
+                                    <img src="../assets/chiaka-logo.png" alt="example" style="width: 400px; height: 250px;">
+                                </div>
+                                <div class="chiaka-ben">CHIAKA BEN-OBI</div>
+                            </div>
 
-                <div class="invitation-content">
-                    <div class="families-text">
-                        {{ invitationData.familiesText }}
-                    </div>
-
-                    <div class="invitation-line">
-                        {{ invitationData.invitedGuest }}
-                    </div>
-
-                    <div class="decorative-line"></div>
-
-                    <div style="font-size: 18px; margin: 20px 0;">
-                        {{ invitationData.eventType }}
-                    </div>
-
-                    <div class="couple-names">
-                        {{ invitationData.bride }} <span class="ampersand">&</span> {{ invitationData.groom }}
-                    </div>
-
-                    <div class="decorative-line"></div>
-
-                    <div class="event-details">
-                        <div class="date">{{ invitationData.date }}</div>
-                        <div class="time">{{ invitationData.time }}</div>
-
-                        <div class="venue">
-                            <div class="venue-name">{{ invitationData.venueName }}</div>
-                            <div class="address">{{ invitationData.address }}</div>
+                            <!-- footer row at the bottom -->
+                            <div class="footer-row">
+                                <div class="footer-col left">
+                                    <p class="top" style="font-size: 11px; margin-bottom: 4px; color: rgb(238, 52, 52);">
+                                        Friday, 14th
+                                        November 2025</p>
+                                    <p class="top" style="font-size: 10px; color: rgb(238, 52, 52);">Thanksgiving Service |
+                                        12 Noon</p>
+                                    <p style="font-size: 9px;">St Peter's Anglican Church,</p>
+                                    <p style="font-size: 9px;">Paradise Hills Estate</p>
+                                    <p style="font-size: 9px;">Inside ENL/</p>
+                                    <p style="font-size: 9px;">Federal Housing Authority (FHA) Estate,</p>
+                                    <p style="font-size: 9px;">Guzape, Abuja.</p>
+                                    <p class="top" style="font-size: 10px; margin-top: 3px; color: rgb(238, 52, 52);">
+                                        Reception | 6 PM</p>
+                                    <p style="font-size: 9px;">Los Angeles Event Center</p>
+                                    <p style="font-size: 9px;">Ahmadu Bello Way, Kado, Abuja.</p>
+                                </div>
+                                <div class="footer-col center">
+                                    <img src="../assets/qrcode.png" style="width: 100px; height: 100px;" />
+                                </div>
+                                <div class="footer-col right">
+                                    <p class="top" style="font-size: 16px; margin-bottom: 4px; color: rgb(238, 52, 52);">
+                                        RSVP</p>
+                                    <p style="font-size: 10px; margin-bottom: 4px; color: rgb(238, 52, 52);">By 15th Oct
+                                        2025</p>
+                                    <p style="font-size: 10px; color: rgb(238, 52, 52);">+2348101111091</p>
+                                    <p
+                                        style="color: rgb(238, 52, 52); font-size: 10px; margin-bottom: 4px; border-bottom: 1px solid #ccc; margin-left: 40px;">
+                                    </p>
+                                    <p style="font-size: 9px;">to gift the celebrant,</p>
+                                    <p class="top" style="font-size: 8px; color: rgb(238, 52, 52);">Visit
+                                        chiaka-at-60-gift-registry.com</p>
+                                    <p class="top" style="font-size: 8px; margin-bottom: 8px;">or scan the QR code with
+                                        your device
+                                    </p>
+                                    <p class="top" style="font-size: 10px;">Your generosity is much appreciated!</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
-
                     <div class="action-buttons no-print">
                         <button class="btn btn-primary" @click="downloadInvite">
                             📄 Download Invite
@@ -54,10 +76,6 @@
                         <button class="btn btn-secondary" @click="goRsvp">
                             🗓️ RSVP
                         </button>
-                    </div>
-
-                    <div class="nda-text">
-                        {{ invitationData.ndaText }}
                     </div>
 
                     <div class="qr-container" style="display: none; text-align: center; margin-top: 20px;">
@@ -90,7 +108,7 @@
                         <div class="contact-info">
                             <p><strong>Questions about your invitation?</strong></p>
                             <p>Please contact our wedding coordinator:</p>
-                            <p class="contact-details">Ikem Paul<br>08160485223</p>
+                            <p class="contact-details">Ikem Paul<br>+2348101111091</p>
                         </div>
                     </div>
                 </div>
@@ -124,18 +142,15 @@ export default {
     computed: {
         invitationData() {
             return {
-                familiesText: `Dama and Chidimma, with the blessing of their families 
-
-                        cordially invite:`,
                 ndaText: 'Please note: Photography and video recording are not permitted during the ceremony. We kindly ask all guests to honor this request.',
                 invitedGuest: this.person.name,
-                eventType: "to the Traditional Wedding of",
-                bride: "Chidimma",
+                eventType: "JOIN US IN CELEBRATING",
+                bride: "Chiaka@60",
                 groom: "Dama",
-                date: "26th September, 2025",
-                time: "at two o'clock in the afternoon",
-                venueName: "Hollywood Event Center",
-                address: "Enugu-Onitsha Expressway, Agu-Awka",
+                date: "14th November, 2025",
+                time: "at twelve, in the afternoon",
+                venueName: "St Peter's Anglican Church, Paradise Hills Estate",
+                address: "Inside ENL/Federal Housing Authority (FHA), Estate, Guzape, Abuja",
                 rsvpTitle: "RSVP: Event Lord Events",
                 rsvpContact: "08160485223"
             }
@@ -210,11 +225,11 @@ export default {
         addToCalendar() {
             const data = this.invitationData;
             const eventDetails = {
-                title: `Ugo & ${data.groom} White Wedding`,
-                start: '20250926T140000Z', // UTC format
-                end: '20250926T180000Z',
+                title: `Chiaka@60`,
+                start: '20251114T120000Z', // UTC format
+                end: '20251114T180000Z',
                 location: `${data.venueName}, ${data.address}`,
-                description: `Traditional Wedding Ceremony for ${data.bride} & ${data.groom}. ${data.rsvpTitle} (${data.rsvpContact})`,
+                description: `Chiaka's Birthday Celebration. ${data.rsvpTitle} (${data.rsvpContact})`,
                 uid: `${Date.now()}@peppubuild.com`
             };
 
@@ -399,9 +414,9 @@ export default {
 
 <style scoped>
 .invitation-container {
-    max-width: 600px;
+    max-width: 650px;
     margin: 0 auto;
-    background: rgba(255, 255, 255, 0.6);
+    background: rgba(255, 255, 255, 0.2);
     /* lower opacity to show background */
     backdrop-filter: blur(10px);
     /* keeps glass effect */
@@ -426,7 +441,7 @@ export default {
 
 .header-decoration {
     height: 150px;
-    background: linear-gradient(45deg, var(--primary-gold), var(--deep-gold));
+    background: linear-gradient(45deg, #008971, #012d25);
     position: relative;
     overflow: hidden;
 }
@@ -610,7 +625,7 @@ export default {
 }
 
 .btn-primary {
-    background: linear-gradient(45deg, var(--primary-gold), var(--deep-gold));
+    background: linear-gradient(45deg, #008971, #012d25);
     color: var(--white);
 }
 
@@ -627,7 +642,7 @@ export default {
 }
 
 .btn-secondary:hover {
-    background: var(--primary-gold);
+    background: #008971;
     color: var(--white);
     transform: translateY(-3px);
     box-shadow: 0 15px 35px rgba(212, 175, 55, 0.3);
@@ -745,27 +760,236 @@ export default {
 }
 
 .body-container {
-  position: relative;
-  background: transparent;
-  overflow: hidden; /* ensures blur doesn’t spill outside */
+    position: relative;
+    background: transparent;
+    overflow: hidden;
+    /* ensures blur doesn’t spill outside */
 }
 
 .body-container::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image: linear-gradient(
-      rgba(0, 0, 0, 0.5),   /* black overlay with 50% opacity */
-      rgba(0, 0, 0, 0.5)
-    ),
-    url('/coverr.jpg');
-  background-size: cover;        /* stretches to cover container */
-  background-repeat: no-repeat;  /* prevents tiling */
-  background-position: center;   /* centers the image */
-  background-attachment: fixed;  /* keeps background fixed while scrolling */
-  filter: blur(8px);
-  transform: scale(1.1); /* avoids sharp blur edges at borders */
-  z-index: -1; /* keeps background behind content */
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(rgba(0, 0, 0, 0.5),
+            /* black overlay with 50% opacity */
+            rgba(0, 0, 0, 0.5)),
+        url('/coverr.jpeg');
+    background-size: cover;
+    /* stretches to cover container */
+    background-repeat: no-repeat;
+    /* prevents tiling */
+    background-position: center;
+    /* centers the image */
+    background-attachment: fixed;
+    /* keeps background fixed while scrolling */
+    transform: scale(1.1);
+    /* avoids sharp blur edges at borders */
+    z-index: -1;
+    /* keeps background behind content */
 }
 
-</style>
+body {
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-image: url('chiaka.png') 40 round;
+}
+
+.frame {
+    width: 600px;
+    height: 800px;
+    background: #fcf3e8;
+    border: 40px solid transparent;
+    -webkit-border-image: url('/saveed.png') 40 round;
+    border-image: url('/saveed.png') 40 round;
+    box-sizing: border-box;
+}
+
+.frame-red {
+    width: 500px;
+    height: 700px;
+    margin: 10px;
+    border: 1.5px solid rgb(238, 52, 52);
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    /* pushes footer down */
+}
+
+.line-with-text {
+    position: relative;
+    height: 1px;
+    background: #333;
+    margin: 100px 60px 40px 60px;
+}
+
+.line-with-text span {
+    position: absolute;
+    top: 40%;
+    left: 50%;
+    transform: translate(-40%, -120%);
+    font-size: 20px;
+    color: #333;
+    font-family: 'Great Vibes', 'Brush Script MT', cursive;
+}
+
+.celebrating {
+    font-family: 'Courier New', Courier, monospace;
+    color: rgb(238, 52, 52);
+    font-size: 15px;
+    text-align: center;
+    font-weight: 600;
+}
+
+p {
+    font-family: 'Courier New', Courier, monospace;
+    letter-spacing: -1px;
+}
+
+.red {
+    color: rgb(238, 52, 52);
+}
+
+.top {
+    font-weight: bold;
+}
+
+.image-container {
+    display: flex;
+    justify-content: center;
+}
+
+.chiaka-ben {
+    font-family: 'Playfair Display', serif;
+    font-size: 40px;
+    text-align: center;
+    margin-top: 10px;
+}
+
+/* footer row */
+.footer-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 10px 20px;
+    font-family: 'Playfair Display', serif;
+    font-size: 14px;
+}
+
+.footer-col {
+    flex: 1;
+}
+
+.footer-col.center {
+    text-align: center;
+}
+
+.footer-col.right {
+    text-align: right;
+}
+
+.footer-col p {
+    margin: 0;
+    /* remove default margins */
+    line-height: 1;
+    /* tighter vertical spacing */
+}
+
+/* Responsive styles for smaller devices */
+@media screen and (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+
+    .frame {
+        width: 100%;
+        max-width: 100%;
+        height: auto;
+        min-height: 600px;
+        border-width: 20px;
+        -webkit-border-image: url('/saveed.png') 20 round;
+        border-image: url('/saveed.png') 20 round;
+    }
+
+    .frame-red {
+        width: calc(100% - 20px);
+        height: auto;
+        min-height: 560px;
+        margin: 10px;
+    }
+
+    .line-with-text {
+        margin: 60px 30px 20px 30px;
+    }
+
+    .line-with-text span {
+        font-size: 28px;
+    }
+
+    .celebrating {
+        font-size: 12px;
+    }
+
+    .image-container img {
+        width: 280px !important;
+        height: 175px !important;
+    }
+
+    .chiaka-ben {
+        font-size: 28px;
+        margin-top: 5px;
+    }
+
+    .footer-row {
+        padding: 10px 10px;
+        font-size: 12px;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .frame {
+        max-width: 100%;
+        border-width: 15px;
+        -webkit-border-image: url('/saveed.png') 15 round;
+        border-image: url('/saveed.png') 15 round;
+    }
+
+    .frame-red {
+        width: calc(100% - 10px);
+        margin: 5px;
+    }
+
+    .line-with-text {
+        margin: 60px 20px 15px 20px;
+    }
+
+    .line-with-text span {
+        font-size: 24px;
+    }
+
+    .celebrating {
+        font-size: 10px;
+    }
+
+    .image-container img {
+        width: 220px !important;
+        height: 140px !important;
+    }
+
+    .chiaka-ben {
+        font-size: 22px;
+    }
+
+    .footer-row {
+        padding: 8px 12px;
+        gap: 12px;
+    }
+
+    .footer-col img {
+        width: 80px !important;
+        height: 80px !important;
+    }
+}</style>
