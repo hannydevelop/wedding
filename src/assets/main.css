@@ -15,6 +15,7 @@
     --pale-blush: #f9f6f3;
     --subtle-shadow: rgba(0, 0, 0, 0.08);
 }
+/*
 
 .foottext {
     color: var(--deep-gold);
@@ -36,7 +37,7 @@ body {
     overflow-x: hidden;
 }
 
-/* Custom Bootstrap Navbar - Fixed overflow issues */
+// Custom Bootstrap Navbar - Fixed overflow issues
 .navbar {
     background: rgba(44, 44, 44, 0.95) !important;
     backdrop-filter: blur(10px);
@@ -107,14 +108,14 @@ body {
     height: 1.5em;
 }
 
-/* Ensure navbar collapse doesn't cause overflow */
+// Ensure navbar collapse doesn't cause overflow 
 .navbar-collapse {
     flex-basis: 100%;
     flex-grow: 1;
     align-items: center;
 }
 
-/* Fix for mobile navbar overflow */
+// Fix for mobile navbar overflow 
 @media (max-width: 991.98px) {
     .navbar-nav {
         flex-direction: column;
@@ -136,7 +137,7 @@ body {
     }
 }
 
-/* Additional small screen fixes */
+// Additional small screen fixes 
 @media (max-width: 576px) {
     .navbar-brand {
         font-size: 1.2rem;
@@ -152,7 +153,7 @@ body {
     }
 }
 
-/* Hero Section */
+// Hero Section 
 .hero {
     height: 100vh;
     position: relative;
@@ -297,7 +298,7 @@ body {
     opacity: 0.8;
 }
 
-/* Section Styling */
+// Section Styling 
 .section {
     padding: 6rem 0;
     position: relative;
@@ -343,7 +344,7 @@ body {
     border-radius: 2px;
 }
 
-/* Timeline Styles */
+// Timeline Styles 
 .timeline {
     position: relative;
     padding: 2rem 0;
@@ -423,7 +424,7 @@ body {
     z-index: 5;
 }
 
-/* Gallery Styles */
+// Gallery Styles 
 .gallery-item {
     position: relative;
     border-radius: 20px;
@@ -464,7 +465,7 @@ body {
     opacity: 0.8;
 }
 
-/* Love Story Section */
+// Love Story Section 
 .love-story {
     background: var(--white);
     border-radius: 25px;
@@ -515,7 +516,7 @@ body {
     margin-bottom: 1rem;
 }
 
-/* Modal Styles */
+// Modal Styles 
 .modal {
     background: rgba(0, 0, 0, 0.95);
     backdrop-filter: blur(10px);
@@ -542,7 +543,7 @@ body {
     background: var(--primary-gold);
 }
 
-/* Animations */
+// Animations 
 @keyframes floatHeart {
     0% {
         transform: translateY(100vh) rotate(0deg);
@@ -573,7 +574,7 @@ body {
     }
 }
 
-/* Custom AOS animations */
+// Custom AOS animations 
 [data-aos="fade-up-heart"] {
     transform: translate3d(0, 100px, 0);
     opacity: 0;
@@ -584,7 +585,7 @@ body {
     opacity: 1;
 }
 
-/* Responsive Design */
+// Responsive Design 
 @media (max-width: 768px) {
     .hero h1 {
         font-size: 2.8rem;
@@ -675,7 +676,7 @@ body {
     padding: 20px;
 }
 
-/* Contact Section */
+// Contact Section 
 .contact {
     padding: 100px 0;
     background: var(--charcoal);
@@ -719,7 +720,11 @@ body {
     margin-top: 10px;
 }
 
-/* Access Denied Styles */
+// Access Denied Styles 
+
+*/
+
+/* Access Denied */
 .access-denied-container {
     min-height: 100vh;
     display: flex;
