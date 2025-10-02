@@ -232,66 +232,72 @@ export default {
             this.$router.push({ path: `/rsvp/${this.person.id}` });
         },
         downloadInvite() {
-            const frameElement = document.querySelector('.frame');
+    const frameElement = document.querySelector('.frame');
 
-            // 1. Create a temporary wrapper (not attached to DOM)
-            const tempWrapper = document.createElement('div');
+    // 1. Create a temporary wrapper (not attached to DOM)
+    const tempWrapper = document.createElement('div');
 
-            // 2. Clone the frame so we don’t overwrite the original
-            const clonedFrame = frameElement.cloneNode(true);
-            tempWrapper.appendChild(clonedFrame);
+    // 2. Clone the frame so we don’t overwrite the original
+    const clonedFrame = frameElement.cloneNode(true);
 
-            // 3. Create a QR code on a temporary canvas
-            const tempCanvas = document.createElement('canvas');
-            new QRious({
-                element: tempCanvas,
-                value: `https://belovedunion.eventlord.org/verify/${this.person.id}`,
-                size: 120
-            });
+    // 🔑 Force full width for PDF
+    clonedFrame.style.width = "100%";
+    clonedFrame.style.maxWidth = "100%";
+    clonedFrame.style.margin = "0 auto";
 
-            // 4. Add "SCAN TO VERIFY INVITE" label
-            const qrLabel = document.createElement('p');
-            qrLabel.innerText = "SCAN TO VERIFY INVITE";
-            qrLabel.style.textAlign = "center";
-            qrLabel.style.marginTop = "20px";
-            qrLabel.style.fontWeight = "bold";
-            qrLabel.style.fontSize = "14px";
-            qrLabel.style.letterSpacing = "1px";
-            qrLabel.style.color = "#333";
+    tempWrapper.appendChild(clonedFrame);
 
-            tempWrapper.appendChild(qrLabel);
+    // 3. Create a QR code on a temporary canvas
+    const tempCanvas = document.createElement('canvas');
+    new QRious({
+        element: tempCanvas,
+        value: `https://belovedunion.eventlord.org/verify/${this.person.id}`,
+        size: 120
+    });
 
-            // 5. Convert QR canvas to an image and add under cloned frame
-            const qrImg = document.createElement('img');
-            qrImg.src = tempCanvas.toDataURL('image/png');
-            qrImg.width = 120;
-            qrImg.height = 120;
-            qrImg.style.display = 'block';
-            qrImg.style.margin = '10px auto 20px auto'; // top+bottom spacing, center
+    // 4. Add "SCAN TO VERIFY INVITE" label
+    const qrLabel = document.createElement('p');
+    qrLabel.innerText = "SCAN TO VERIFY INVITE";
+    qrLabel.style.textAlign = "center";
+    qrLabel.style.marginTop = "20px";
+    qrLabel.style.fontWeight = "bold";
+    qrLabel.style.fontSize = "14px";
+    qrLabel.style.letterSpacing = "1px";
+    qrLabel.style.color = "#333";
 
-            tempWrapper.appendChild(qrImg);
+    tempWrapper.appendChild(qrLabel);
 
-            // 6. Generate PDF from this combined wrapper
-            const opt = {
-                margin: 10,
-                filename: `invitation-${this.invitationData.invitedGuest || 'guest'}.pdf`,
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: {
-                    scale: 2,
-                    useCORS: true,
-                    allowTaint: true,
-                },
-                jsPDF: {
-                    unit: 'mm',
-                    format: 'a4',
-                    orientation: 'portrait',
-                    compress: true
-                }
-            };
+    // 5. Convert QR canvas to an image and add under cloned frame
+    const qrImg = document.createElement('img');
+    qrImg.src = tempCanvas.toDataURL('image/png');
+    qrImg.width = 120;
+    qrImg.height = 120;
+    qrImg.style.display = 'block';
+    qrImg.style.margin = '10px auto 20px auto';
 
-            html2pdf().from(tempWrapper).set(opt).save();
+    tempWrapper.appendChild(qrImg);
+
+    // 6. Generate PDF from this combined wrapper
+    const opt = {
+        margin: [5, 10, 10, 10], // top, right, bottom, left
+        filename: `invitation-${this.invitationData.invitedGuest || 'guest'}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: {
+            scale: 2,
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: '#fcf3e8'
         },
+        jsPDF: {
+            unit: 'mm',
+            format: 'a4',
+            orientation: 'portrait',
+            compress: true
+        }
+    };
 
+    html2pdf().from(tempWrapper).set(opt).save();
+},
         addToCalendar() {
             const data = this.invitationData;
             const eventDetails = {
@@ -1090,6 +1096,10 @@ p {
         margin: 60px 30px 20px 30px;
     }
 
+    .line-with-text span {
+        font-size: 15px;
+    }
+
     .celebrating {
         font-size: 12px;
     }
@@ -1122,6 +1132,10 @@ p {
 
     .line-with-text {
         margin: 60px 20px 15px 20px;
+    }
+
+    .line-with-text span {
+        font-size: 12px;
     }
 
     .celebrating {
