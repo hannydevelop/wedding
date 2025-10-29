@@ -14,8 +14,7 @@
                 <div class="main-container">
                     <div class="left-panel">
                         <div class="gift-icon">RSVP: Chiaka at Sixty</div>
-                        <h3 class="to-gift"><a href="https://www.chiaka-at-60-gift-registry.com/">To gift the celebrant,
-                                visit our gift shop</a></h3>
+                        <h3 class="to-gift">Kindly RSVP before 13th of October, 2025</h3>
                         <div class="image-container">
                             <img src="/coverr.jpeg" alt="Profile" class="profile-image">
                             <div class="overlay"></div>
@@ -110,7 +109,12 @@
                                 <button class="btn btn-secondary" @click="addToCalendar">
                                     📅 Add to Calendar
                                 </button>
-                                <button class="btn btn-secondary" @click="goRsvp">
+                            </div>
+                            <div class="action-buttons no-print">
+                                <button class="btn btn-primary" @click="goGift">
+                                    🎁 Gift Celebrant
+                                </button>
+                                <button class="btn btn-secondary" @click="generatePDF()">
                                     🗓️ RSVP
                                 </button>
                             </div>
@@ -162,6 +166,8 @@
 import supabase from '../supabase'
 import html2pdf from 'html2pdf.js';
 import QRious from 'qrious';
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 import { CapacitorCalendar } from '@ebarooni/capacitor-calendar';
 
 export default {
@@ -232,72 +238,75 @@ export default {
             this.$router.push({ path: `/rsvp/${this.person.id}` });
         },
         downloadInvite() {
-    const frameElement = document.querySelector('.frame');
+            const frameElement = document.querySelector('.frame');
 
-    // 1. Create a temporary wrapper (not attached to DOM)
-    const tempWrapper = document.createElement('div');
+            // 1. Create a temporary wrapper (not attached to DOM)
+            const tempWrapper = document.createElement('div');
 
-    // 2. Clone the frame so we don’t overwrite the original
-    const clonedFrame = frameElement.cloneNode(true);
+            // 2. Clone the frame so we don’t overwrite the original
+            const clonedFrame = frameElement.cloneNode(true);
 
-    // 🔑 Force full width for PDF
-    clonedFrame.style.width = "100%";
-    clonedFrame.style.maxWidth = "100%";
-    clonedFrame.style.margin = "0 auto";
+            // 🔑 Force full width for PDF
+            clonedFrame.style.width = "100%";
+            clonedFrame.style.maxWidth = "100%";
+            clonedFrame.style.margin = "0 auto";
 
-    tempWrapper.appendChild(clonedFrame);
+            tempWrapper.appendChild(clonedFrame);
 
-    // 3. Create a QR code on a temporary canvas
-    const tempCanvas = document.createElement('canvas');
-    new QRious({
-        element: tempCanvas,
-        value: `https://belovedunion.eventlord.org/verify/${this.person.id}`,
-        size: 120
-    });
+            // 3. Create a QR code on a temporary canvas
+            const tempCanvas = document.createElement('canvas');
+            new QRious({
+                element: tempCanvas,
+                value: `https://belovedunion.eventlord.org/verify/${this.person.id}`,
+                size: 120
+            });
 
-    // 4. Add "SCAN TO VERIFY INVITE" label
-    const qrLabel = document.createElement('p');
-    qrLabel.innerText = "SCAN TO VERIFY INVITE";
-    qrLabel.style.textAlign = "center";
-    qrLabel.style.marginTop = "20px";
-    qrLabel.style.fontWeight = "bold";
-    qrLabel.style.fontSize = "14px";
-    qrLabel.style.letterSpacing = "1px";
-    qrLabel.style.color = "#333";
+            // 4. Add "SCAN TO VERIFY INVITE" label
+            const qrLabel = document.createElement('p');
+            qrLabel.innerText = "SCAN TO VERIFY INVITE";
+            qrLabel.style.textAlign = "center";
+            qrLabel.style.marginTop = "20px";
+            qrLabel.style.fontWeight = "bold";
+            qrLabel.style.fontSize = "14px";
+            qrLabel.style.letterSpacing = "1px";
+            qrLabel.style.color = "#333";
 
-    tempWrapper.appendChild(qrLabel);
+            tempWrapper.appendChild(qrLabel);
 
-    // 5. Convert QR canvas to an image and add under cloned frame
-    const qrImg = document.createElement('img');
-    qrImg.src = tempCanvas.toDataURL('image/png');
-    qrImg.width = 120;
-    qrImg.height = 120;
-    qrImg.style.display = 'block';
-    qrImg.style.margin = '10px auto 20px auto';
+            // 5. Convert QR canvas to an image and add under cloned frame
+            const qrImg = document.createElement('img');
+            qrImg.src = tempCanvas.toDataURL('image/png');
+            qrImg.width = 120;
+            qrImg.height = 120;
+            qrImg.style.display = 'block';
+            qrImg.style.margin = '10px auto 20px auto';
 
-    tempWrapper.appendChild(qrImg);
+            tempWrapper.appendChild(qrImg);
 
-    // 6. Generate PDF from this combined wrapper
-    const opt = {
-        margin: [5, 10, 10, 10], // top, right, bottom, left
-        filename: `invitation-${this.invitationData.invitedGuest || 'guest'}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: {
-            scale: 2,
-            useCORS: true,
-            allowTaint: true,
-            backgroundColor: '#fcf3e8'
+            // 6. Generate PDF from this combined wrapper
+            const opt = {
+                margin: [5, 10, 10, 10], // top, right, bottom, left
+                filename: `invitation-${this.invitationData.invitedGuest || 'guest'}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: {
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: '#fcf3e8'
+                },
+                jsPDF: {
+                    unit: 'mm',
+                    format: 'a4',
+                    orientation: 'portrait',
+                    compress: true
+                }
+            };
+
+            html2pdf().from(tempWrapper).set(opt).save();
         },
-        jsPDF: {
-            unit: 'mm',
-            format: 'a4',
-            orientation: 'portrait',
-            compress: true
-        }
-    };
-
-    html2pdf().from(tempWrapper).set(opt).save();
-},
+        goGift() {
+            return window.location.replace("https://www.chiaka-at-60-gift-registry.com/");
+        },
         addToCalendar() {
             const data = this.invitationData;
             const eventDetails = {
@@ -459,6 +468,87 @@ export default {
             setTimeout(() => {
                 this.downloadICS(eventDetails, true);
             }, 3000);
+        },
+        // Your existing Supabase query function
+        async fetchData() {
+            try {
+                const { data: result, error } = await supabase
+                    .from('people')
+                    .select('*')
+
+                if (error) {
+                    console.error('Error fetching crew:', error.message)
+                    return []
+                }
+
+                // Filter data to only include records where id has 8 characters
+                const filteredData = (result || []).filter(person => {
+                    const idString = String(person.id)
+                    return idString.length === 8
+                })
+
+                return filteredData
+            } catch (err) {
+                console.error('Error:', err)
+                return []
+            }
+        },
+        // Function to generate and download PDF
+        async generatePDF() {
+            try {
+                // Fetch fresh data
+                this.fetchData().then((freshData) => {
+                    if (!freshData || freshData.length === 0) {
+                    alert('No data available to generate PDF')
+                    return
+                }
+
+                // Create new jsPDF instance
+                const doc = new jsPDF()
+
+                // Set document title
+                doc.setFontSize(20)
+                doc.text('People Invitation List', 20, 20)
+
+                // Prepare table data
+                const tableData = freshData.map(person => [
+                    person.name || 'N/A',
+                    person.phone || 'N/A',
+                    person.guest || 'N/A',
+                    `https://e-invite.peppubuild.com/invite/${person.id}`
+                ])
+
+                // Generate table
+                autoTable(doc, {
+                    head: [['Name', 'Phone Number', 'Guests', 'Invite Link']],
+                    body: tableData,
+                    startY: 30,
+                    styles: {
+                        fontSize: 10,
+                        cellPadding: 3,
+                    },
+                    headStyles: {
+                        fillColor: [66, 139, 202],
+                        textColor: 255,
+                        fontSize: 12,
+                        fontStyle: 'bold'
+                    },
+                    columnStyles: {
+                        3: { cellWidth: 60 } // Make invite link column wider
+                    },
+                    margin: { top: 30, left: 20, right: 20 }
+                })
+
+                // Save the PDF
+                doc.save('invitation-list.pdf')
+                })
+
+                
+
+            } catch (error) {
+                console.error('Error generating PDF:', error)
+                alert('Error generating PDF. Please try again.')
+            }
         }
     },
     mounted() {
